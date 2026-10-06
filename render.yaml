@@ -1,0 +1,23 @@
+# Render Blueprint: the Simurgh website as a static site (no build step; the files are in site/).
+# The installer is not here - it is attached to the GitHub release (too big for a Git repository).
+services:
+  - name: simurgh
+    type: web
+    runtime: static
+    buildCommand: echo "static site - nothing to build"
+    staticPublishPath: ./site
+    autoDeploy: true
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=86400
+    routes:
+      - source: /download
+        destination: https://github.com/ahmadzaisv/simurgh/releases/latest/download/Simurgh-Setup.exe
+        type: redirect
