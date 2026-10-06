@@ -3,15 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>سیمرغ — دستیار هوشمند شما برای ویندوز</title>
-  <meta name="description" content="سیمرغ یک دستیار هوشمند رایگان برای ویندوز است. کارها را روی کمپیوتر شما انجام می‌دهد — فایل‌ها، اسناد، انترنت، برنامه‌ها و تنظیمات — به دری، پشتو یا انگلیسی.">
-  <meta name="theme-color" content="#0a0e17">
+  <title>سیمرغ — دستیاری برای ویندوز که کار را خودش انجام می‌دهد</title>
+  <meta name="description" content="سیمرغ یک دستیار رایگان برای ویندوز است. روی کمپیوتر شما کار می‌کند — فایل‌ها، اسناد، انترنت، برنامه‌ها و تنظیمات — به دری، پشتو یا انگلیسی. ساختهٔ بلال احمدزی.">
+  <meta name="author" content="Bilal Ahmadzai">
+  <meta name="theme-color" content="#fbf8f2">
   <link rel="icon" href="../assets/icon.png" type="image/png">
   <link rel="alternate" hreflang="en" href="/">
   <link rel="alternate" hreflang="ps" href="/ps/">
   <link rel="alternate" hreflang="fa" href="/fa/">
-  <meta property="og:title" content="سیمرغ — دستیار هوشمند شما برای ویندوز">
-  <meta property="og:description" content="فقط جواب نمی‌دهد — کار را روی کمپیوتر شما انجام می‌دهد. رایگان برای ویندوز ۱۰ و ۱۱.">
+  <meta property="og:title" content="سیمرغ — دستیاری برای ویندوز که کار را خودش انجام می‌دهد">
+  <meta property="og:description" content="رایگان برای ویندوز ۱۰ و ۱۱. دری، پشتو و انگلیسی می‌فهمد.">
   <meta property="og:image" content="../assets/shots/chat.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,14 +23,13 @@
   <a class="skip" href="#main">رفتن به محتوا</a>
   <header class="top">
     <div class="wrap">
-      <a class="brand" href="/fa/"><img src="../assets/icon.png" alt="" width="32" height="32"><span>سیمرغ</span></a>
+      <a class="brand" href="/fa/"><img src="../assets/icon.png" alt="" width="30" height="30">سیمرغ</a>
       <nav class="nav" aria-label="بخش‌ها">
-        <a href="#features">ویژگی‌ها</a>
-        <a href="#languages">پشتو و دری</a>
+        <a href="#what">چه کار می‌کند</a>
+        <a href="#why">چرا ساختمش</a>
         <a href="#install">نصب</a>
-        <a href="#faq">پرسش‌ها</a>
+        <a href="#questions">پرسش‌ها</a>
       </nav>
-      <span class="spacer"></span>
       <nav class="langs" aria-label="زبان">
         <a href="/" lang="en">English</a>
         <a href="/ps/" lang="ps">پښتو</a>
@@ -39,211 +39,105 @@
   </header>
 
   <main id="main">
-    <section class="hero">
-      <div class="wrap">
-        <img class="mark" src="../assets/logo-512.png" alt="سیمرغ" width="92" height="92">
-        <h1>دستیار هوشمند شما برای <em>ویندوز</em></h1>
-        <p class="lead">فقط جواب نمی‌دهد — کار را روی کمپیوتر شما انجام می‌دهد: فایل‌ها، اسناد، انترنت، برنامه‌ها و تنظیمات. به دری، پشتو یا انگلیسی.</p>
-        <div class="cta">
-          <a class="btn btn-gold" data-download href="https://github.com/ahmadzaisv/simurgh/releases/latest/download/Simurgh-Setup.exe">
-            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 5.5 10.5 4.4v7.1H3zm0 13 7.5 1.1v-7H3zm8.4 1.2L21 21V12.6h-9.6zm0-15.4v7.2H21V3z"/></svg>
-            دانلود برای ویندوز
-          </a>
-          <a class="btn btn-ghost" href="#install">چطور نصب کنم؟</a>
-        </div>
-        <p class="meta"><span>رایگان</span><span>ویندوز ۱۰ و ۱۱، ۶۴ بیتی</span><span data-version>نسخه ۰.۱.۰</span></p>
-        <figure class="shot">
-          <div class="bar" aria-hidden="true"><i></i><i></i><i></i></div>
-          <img src="../assets/shots/chat.png" width="1552" height="1020" alt="پنجرهٔ سیمرغ: یک درخواست رخصتی به پشتو به شکل سند Word نوشته شد و جواب نشان می‌دهد که در آن چه است." loading="eager">
-          <figcaption>یک کار واقعی: «درخواست رخصتی را به پشتو به شکل فایل Word بنویس» — نوشته، بررسی و ذخیره شد.</figcaption>
-        </figure>
+    <div class="wrap intro">
+      <div>
+        <img class="mark" src="../assets/logo-512.png" alt="" width="64" height="64">
+        <h1>سیمرغ</h1>
+        <p class="lead">دستیاری برای ویندوز که فقط جواب نمی‌دهد — کار را روی کمپیوتر شما انجام می‌دهد: نامه‌ها، جدول‌ها، فایل‌ها، فورم‌ها و انترنت. به دری، پشتو یا انگلیسی.</p>
+        <a class="download" data-download href="https://github.com/ahmadzaisv/simurgh/releases/latest/download/Simurgh-Setup.exe">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 5.5 10.5 4.4v7.1H3zm0 13 7.5 1.1v-7H3zm8.4 1.2L21 21V12.6h-9.6zm0-15.4v7.2H21V3z"/></svg>
+          دانلود برای ویندوز
+        </a>
+        <p class="meta">رایگان · ویندوز ۱۰ و ۱۱ (۶۴ بیتی) · <span data-version>نسخه 0.1.0</span></p>
       </div>
-    </section>
+      <figure>
+        <img class="frame" src="../assets/shots/chat.png" width="1552" height="1020" alt="پنجرهٔ سیمرغ: یک درخواست رخصتی به پشتو به شکل فایل Word، و جوابی که می‌گوید در آن چه است.">
+        <figcaption>یک درخواست رخصتی به پشتو به شکل فایل Word خواستم. این را تحویل داد.</figcaption>
+      </figure>
+    </div>
 
-    <section id="features">
+    <section id="what">
       <div class="wrap">
-        <p class="eyebrow">چه کار می‌کند</p>
-        <h2>یک دستیار برای همهٔ کارهای کمپیوتر شما</h2>
-        <p class="sub">آنچه را می‌خواهید با کلمات خودتان بگویید. سیمرغ قدم‌ها را برنامه‌ریزی می‌کند، ابزار درست را به کار می‌برد، هر قدم را نشان می‌دهد و پیش از هر کار مهم از شما می‌پرسد.</p>
-        <div class="grid">
-          <article class="card">
-            <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
-            <h3>با کمپیوتر شما کار می‌کند</h3>
-            <p>صفحه را می‌بیند، در هر برنامه کلیک و تایپ می‌کند — و دکمه‌ها و خانه‌های واقعی برنامه‌ها را از طریق ویندوز می‌خواند، پس حدس نمی‌زند.</p>
-          </article>
-          <article class="card">
-            <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 17 6-6-6-6"/><path d="M12 19h8"/></svg></div>
-            <h3>Claude Code در داخل آن</h3>
-            <p>همان Claude Code را که روی کمپیوتر شما نصب است در پنجرهٔ سیمرغ اجرا می‌کند: فرمان‌ها، حالت‌ها، حافظه و گفتگوهای قبلی‌اش — همراه با مهارت‌ها و بررسی‌های امنیتی سیمرغ.</p>
-          </article>
-          <article class="card">
-            <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2z"/></svg></div>
-            <h3>۱۷۰ مهارت در ۱۴ گروه</h3>
-            <p>پشتو، دری، اسناد، اسلایدها، مکتب و پوهنتون، تحقیق در انترنت، عکس و ویدیو، نگهداری کمپیوتر و بیشتر — و از آنچه یاد می‌گیرد مهارت تازه می‌نویسد.</p>
-          </article>
-          <article class="card">
-            <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg></div>
-            <h3>اسناد درست و مرتب</h3>
-            <p>Word، PDF، Excel و PowerPoint — و پیش از اینکه فایل را تحویل بدهد هر صفحه را می‌بیند، تا اشتباه‌ها را شما پیدا نکنید.</p>
-          </article>
-          <article class="card">
-            <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
-            <h3>مرورگر خودش</h3>
-            <p>جستجو می‌کند، صفحه‌ها را می‌خواند، قیمت‌ها را مقایسه می‌کند، فورم‌ها را پر می‌کند و بوکمارک‌ها و تاریخچهٔ شما را نگه می‌دارد — و بدون پرسیدن هیچ چیزی را ارسال یا پرداخت نمی‌کند.</p>
-          </article>
-          <article class="card">
-            <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
-            <h3>کارهای خودکار</h3>
-            <p>کارهایی که یک بار، هر روز، هر هفته یا هر چند دقیقه اجرا می‌شوند — نتیجه به شکل اطلاعیه یا روی تیلفون شما می‌رسد.</p>
-          </article>
-          <article class="card">
-            <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg></div>
-            <h3>از تیلفون شما</h3>
-            <p>از طریق تلگرام کار و فایل بفرستید، کارها را تأیید کنید، عکس صفحه بخواهید یا کاری را متوقف کنید — حتی وقتی دور از کمپیوتر هستید.</p>
-          </article>
-          <article class="card">
-            <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></div>
-            <h3>با امنیت ساخته شده</h3>
-            <p>پیش از هر کاری که برگشت ندارد می‌پرسد، تغییرات فایل‌ها را قابل برگشت (Undo) نگه می‌دارد، پیش از بستن پنجره‌ای که شما باز کرده بودید می‌پرسد و با <code>Ctrl+Alt+X</code> می‌ایستد.</p>
-          </article>
-          <article class="card">
-            <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
-            <h3>آنچه به کار می‌آید را به یاد دارد</h3>
-            <p>نام شما، فایل‌هایتان و اینکه کارها را چطور دوست دارید — روی کمپیوتر خودتان نگه داشته می‌شود و هر یادداشت را می‌توانید ببینید و پاک کنید.</p>
-          </article>
+        <h2>چه کار می‌کند</h2>
+        <div class="cols">
+          <p><b>با کمپیوتر شما کار می‌کند.</b> صفحه را می‌بیند، در هر برنامه کلیک و تایپ می‌کند، و به جای حدس زدن، دکمه‌ها و خانه‌های واقعی برنامه‌ها را از طریق ویندوز می‌خواند.</p>
+          <p><b>اسناد.</b> Word، PDF، Excel و PowerPoint. پیش از اینکه فایل را تحویل بدهد هر صفحه را می‌بیند، تا لازم نباشد شما اشتباه‌هایش را پیدا کنید.</p>
+          <p><b>Claude Code.</b> اگر از Claude Code استفاده می‌کنید، همین‌جا در پنجرهٔ سیمرغ اجرا می‌شود — با فرمان‌ها، حافظه و گفتگوهای قبلی‌اش، همراه با مهارت‌های سیمرغ.</p>
+          <p><b>۱۷۰ مهارت.</b> سی‌وی، فورم‌های رسمی، گزارش‌ها، اسلایدها، تحقیق، کارهای مکتب، پاک‌کاری کمپیوتر کند و بیشتر. هر کدام را می‌توانید خاموش کنید.</p>
+          <p><b>مرورگر خودش.</b> جستجو می‌کند، صفحه‌ها را می‌خواند و فورم‌ها را پر می‌کند — اما بدون پرسیدن از شما هیچ چیزی را ارسال یا پرداخت نمی‌کند.</p>
+          <p><b>از تیلفون شما.</b> از طریق تلگرام کار و فایل بفرستید، آنچه را می‌خواهد انجام دهد تأیید کنید، یا وقتی دور از کمپیوتر هستید متوقفش کنید.</p>
+          <p><b>کارهای خودکار.</b> کارهایی که یک بار، هر روز، هر هفته یا هر چند دقیقه اجرا می‌شوند.</p>
+          <p><b>با احتیاط.</b> پیش از هر کاری که برگشت ندارد می‌پرسد، تغییرات فایل‌ها را قابل برگشت (Undo) نگه می‌دارد و همین که <code>Ctrl+Alt+X</code> را فشار دهید می‌ایستد.</p>
         </div>
       </div>
     </section>
 
     <section id="languages">
-      <div class="wrap split">
+      <div class="wrap side">
         <div>
-          <p class="eyebrow">پشتو · دری · انگلیسی</p>
-          <h2>برای زبان‌های افغانستان ساخته شده، نه اینکه به آن‌ها ترجمه شده باشد</h2>
-          <p class="sub">سیمرغ پشتو و دری را همان‌طور می‌خواند و می‌نویسد که مردم افغانستان می‌نویسند — و کار خودش را بررسی می‌کند.</p>
-          <ul class="ticks">
-            <li><b>اسناد Word و اسلایدهای راست‌به‌چپ</b> — پاراگراف‌ها، جدول‌ها و فهرست‌ها از راست شروع می‌شوند، با فونت‌هایی که حروف را درست به هم وصل می‌کنند.</li>
-            <li><b>مکتوب‌ها و عریضه‌های رسمی</b> — شکل معیاری افغانی، تاریخ هجری شمسی (۱۳ میزان ۱۴۰۵) و عنوان‌های درست خطاب.</li>
+          <h2>پشتو و دری، همان‌طور که باید</h2>
+          <p>بیشتر ابزارهای هوش مصنوعی زبان‌های ما را جدی نمی‌گیرند. سیمرغ می‌گیرد:</p>
+          <ul>
+            <li><b>فایل‌های Word و اسلایدهای راست‌به‌چپ</b> — پاراگراف‌ها، جدول‌ها و فهرست‌ها، با فونت‌هایی که حروف را درست به هم وصل می‌کنند.</li>
+            <li><b>مکتوب‌ها و عریضه‌های رسمی</b> به شکل معمول افغانی، با تاریخ هجری شمسی مثل ۱۳ میزان ۱۴۰۵.</li>
             <li><b>بررسی املای پشتو</b> — پنج نوع «ی»، حروف ټ ډ ړ ږ ښ ګ ڼ، و کلمه‌های دری که در پشتو وارد می‌شوند.</li>
-            <li><b>صفحه را می‌بیند</b> — همهٔ حروف درست نمایش داده شوند، علامه‌ها در سمت درست باشند و اعداد یک شکل داشته باشند.</li>
           </ul>
         </div>
-        <figure class="panel">
-          <img src="../assets/shots/document-check.png" width="1552" height="1020" alt="یک قدم در سیمرغ: سند Word که ساخت، همراه با عکس صفحه‌ای که بررسی کرد." loading="lazy">
-          <figcaption>پیش از اینکه بگوید «تمام شد»، سیمرغ صفحه را رسم می‌کند و بررسی می‌کند.</figcaption>
+        <figure>
+          <img class="frame" src="../assets/shots/document-check.png" width="1552" height="1020" alt="یک قدم در سیمرغ: فایل Word که ساخت، همراه با عکس صفحه‌ای که بررسی کرد." loading="lazy">
+          <figcaption>پیش از اینکه بگوید «تمام شد»، صفحه را رسم می‌کند و بررسی می‌کند.</figcaption>
         </figure>
       </div>
     </section>
 
-    <section id="skills">
-      <div class="wrap split flip">
-        <div>
-          <p class="eyebrow">مهارت‌ها</p>
-          <h2>می‌داند کار چطور انجام می‌شود</h2>
-          <p class="sub">هر مهارت یک رهنمای کوتاه و آزمایش‌شده است: فورم‌ها، سی‌وی، گزارش‌ها، اسلایدها، تحقیق، کارهای مکتب، پاک‌کاری کمپیوتر، تلگرام و بسیار بیشتر. هر کدام را می‌توانید خاموش کنید، یا بگذارید سیمرغ پس از یاد گرفتن چیزی مهارت تازه بنویسد.</p>
-          <ul class="ticks">
-            <li><b>کار با کمپیوتر مثل یک انسان</b> — هر پیام را پیش از جواب دادن می‌خواند و هر قدم را بررسی می‌کند.</li>
-            <li><b>مکتب و پوهنتون</b> — توضیح می‌دهد، امتحان می‌سازد و با منابع می‌نویسد.</li>
-            <li><b>ویندوز و نگهداری کمپیوتر</b> — فضای دیسک، برنامه‌های شروع، آپدیت‌ها، وای‌فای و پرینتر.</li>
-          </ul>
-        </div>
-        <figure class="panel">
-          <img src="../assets/shots/skills.png" width="1242" height="816" alt="صفحهٔ مهارت‌های سیمرغ: ۱۷۰ مهارت در گروه‌هایی مانند پشتو، دری، اسناد و کار با کمپیوتر." loading="lazy">
-        </figure>
-      </div>
-    </section>
-
-    <section id="models" class="center">
+    <section id="why">
       <div class="wrap">
-        <p class="eyebrow">هوش مصنوعی به انتخاب شما</p>
-        <h2>با هوش مصنوعی‌ای که دارید کار می‌کند</h2>
-        <p class="sub">با حساب خود وارد شوید، کلید API بدهید یا مدلی را روی کمپیوتر خودتان اجرا کنید. هر وقت خواستید عوضش کنید.</p>
-        <div class="models">
-          <span class="model">ChatGPT <small>پلان شما</small></span>
-          <span class="model">Claude Code <small>نصب‌شده روی کمپیوتر شما</small></span>
-          <span class="model">OpenRouter <small>ورود</small></span>
-          <span class="model">Anthropic Claude <small>کلید API</small></span>
-          <span class="model">OpenAI <small>کلید API</small></span>
-          <span class="model">Google Gemini <small>کلید API</small></span>
-          <span class="model">Ollama <small>رایگان، روی کمپیوتر شما</small></span>
+        <h2>چرا سیمرغ را ساختم</h2>
+        <div class="note-from">
+          <p>سلام، من بلال احمدزی هستم، از افغانستان.</p>
+          <p>می‌خواستم دستیاری برای کمپیوتر داشته باشم که فقط به سوال‌ها جواب ندهد، بلکه واقعاً کار را انجام دهد: نامه را بنویسد، جدول را درست کند، فایل را پیدا کند و فورم را پر کند. و می‌خواستم زبان‌های مرا هم بفهمد. بیشتر ابزارهای هوش مصنوعی به پشتو و دری اهمیت نمی‌دهند: حروف شکسته می‌آیند، جدول‌ها برعکس می‌شوند و تاریخ‌ها به تقویمی هستند که اینجا کسی از آن استفاده نمی‌کند.</p>
+          <p>پس سیمرغ را ساختم. نامش را از سیمرغ گرفته‌ام، پرندهٔ دانای قصه‌های کهن ما که به گم‌شدگان راه نشان می‌دهد.</p>
+          <p>سیمرغ رایگان است. اگر چیزی درست کار نمی‌کند یا فکری دارید، <a href="https://github.com/ahmadzaisv/simurgh/issues">در GitHub به من بگویید</a>.</p>
+          <p class="sign">— بلال</p>
         </div>
       </div>
     </section>
 
     <section id="install">
       <div class="wrap">
-        <p class="eyebrow">نصب</p>
-        <h2>در یک دقیقه آماده</h2>
-        <p class="sub">نه حسابی نزد ما لازم است، نه اجازهٔ ادمین.</p>
-        <div class="steps">
-          <div class="step">
-            <h3>دانلود</h3>
-            <p>فایل <code>Simurgh-Setup.exe</code> را با دکمهٔ همین صفحه دانلود کنید (حدود ۱۱۵ MB).</p>
-          </div>
-          <div class="step">
-            <h3>بازش کنید</h3>
-            <p>برای حساب ویندوز شما نصب می‌شود و سیمرغ را باز می‌کند. یک میان‌بر روی دسکتاپ و در منوی Start ساخته می‌شود.</p>
-          </div>
-          <div class="step">
-            <h3>هوش مصنوعی خود را انتخاب کنید</h3>
-            <p>با ChatGPT یا OpenRouter وارد شوید، Claude Code را آماده کنید یا کلید بدهید — بعد فقط بگویید چه می‌خواهید.</p>
-          </div>
-        </div>
-        <p class="note"><b>اگر ویندوز گفت «Windows protected your PC»:</b> روی <b>More info</b> و بعد <b>Run anyway</b> کلیک کنید. ویندوز این هشدار را برای برنامه‌های تازه‌ای نشان می‌دهد که نصب‌کنندهٔ آن‌ها هنوز امضا نشده است؛ نصب‌کنندهٔ سیمرغ امضا خواهد شد.</p>
+        <h2>نصب</h2>
+        <ol class="install">
+          <li><code>Simurgh-Setup.exe</code> را دانلود کنید (حدود ۱۱۵ MB).</li>
+          <li>بازش کنید. برای حساب ویندوز شما نصب می‌شود — اجازهٔ ادمین لازم نیست — و یک میان‌بر روی دسکتاپ می‌گذارد.</li>
+          <li>یک هوش مصنوعی انتخاب کنید: با ChatGPT یا OpenRouter وارد شوید، Claude Code را آماده کنید، کلید API بدهید (Anthropic، OpenAI، Gemini)، یا با Ollama یک مدل رایگان را روی کمپیوتر خودتان اجرا کنید.</li>
+        </ol>
+        <p class="warn">ممکن است ویندوز بگوید <b>«Windows protected your PC»</b>، چون سیمرغ تازه است و نصب‌کننده‌اش هنوز امضا نشده. روی <b>More info</b> و بعد <b>Run anyway</b> کلیک کنید. بعد از آن خودش به‌روز می‌ماند.</p>
       </div>
     </section>
 
-    <section id="privacy">
-      <div class="wrap split">
-        <div>
-          <p class="eyebrow">حریم خصوصی</p>
-          <h2>کمپیوتر شما، معلومات شما</h2>
-          <ul class="ticks">
-            <li><b>روی کمپیوتر شما اجرا می‌شود.</b> گفتگوها، تنظیمات و حافظه در <code>%APPDATA%\Simurgh</code> می‌مانند؛ فایل‌هایی که می‌سازد به <code>Documents\Simurgh</code> می‌روند.</li>
-            <li><b>حرف‌های شما فقط به هوش مصنوعی‌ای می‌رود که انتخاب می‌کنید</b> — و با مدل محلی به هیچ جا نمی‌رود.</li>
-            <li><b>ورودها و کلیدها را ویندوز رمزگذاری می‌کند</b> و جز برای رسیدن به همان سرویس از کمپیوتر شما بیرون نمی‌روند.</li>
-            <li><b>نه حساب، نه اعلان، نه ردیابی.</b></li>
-          </ul>
-        </div>
-        <figure class="panel">
-          <img src="../assets/shots/welcome.png" width="900" height="790" alt="صفحهٔ خوش‌آمد سیمرغ: کار با کمپیوتر، بیش از ۱۰۰ مهارت، پشتو، دری و انگلیسی، و کار از طریق تیلفون." loading="lazy">
-        </figure>
-      </div>
-    </section>
-
-    <section id="faq">
+    <section id="questions" class="faq">
       <div class="wrap">
-        <p class="eyebrow center">پرسش‌ها</p>
-        <h2 class="center">خوب است بدانید</h2>
-        <div class="faq">
-          <details><summary>آیا سیمرغ رایگان است؟</summary><p>بله. سرویس هوش مصنوعی‌ای که وصل می‌کنید ممکن است قیمت خودش را داشته باشد: پلان ChatGPT یا Claude که از قبل پولش را می‌پردازید، کریدیت OpenRouter یا مصرف API. Ollama روی کمپیوتر خودتان رایگان اجرا می‌شود.</p></details>
-          <details><summary>روی کدام کمپیوترها اجرا می‌شود؟</summary><p>ویندوز ۱۰ و ویندوز ۱۱، ۶۴ بیتی. مک و لینوکس هنوز پشتیبانی نمی‌شوند.</p></details>
-          <details><summary>آیا به انترنت نیاز دارم؟</summary><p>برای سرویس‌های آنلاین هوش مصنوعی، بله. با Ollama بدون انترنت هم کار می‌کند، اما مدل محلی برای سرعت به کمپیوتر قوی نیاز دارد.</p></details>
-          <details><summary>آیا امن است که هوش مصنوعی از کمپیوترم استفاده کند؟</summary><p>سیمرغ هر قدم را نشان می‌دهد، پیش از هر کار مهم یا دائمی می‌پرسد، تغییرات فایل‌ها را قابل برگشت نگه می‌دارد و پیش از بستن هر پنجره‌ای که شما باز کرده بودید می‌پرسد. <code>Ctrl+Alt+X</code> را فشار دهید — یا ماوس را به تندی به گوشهٔ بالا و چپ صفحه ببرید — تا فوراً بایستد.</p></details>
-          <details><summary>چطور حذفش کنم؟</summary><p>Settings ویندوز ← Apps ← Installed apps ← Simurgh ← Uninstall. گفتگوها و تنظیمات شما در <code>%APPDATA%\Simurgh</code> می‌مانند تا وقتی که آن فولدر را خودتان پاک کنید.</p></details>
-        </div>
-      </div>
-    </section>
-
-    <section class="final">
-      <div class="wrap">
-        <h2>بگذارید سیمرغ کار را انجام دهد</h2>
-        <p class="sub" style="margin-inline:auto">رایگان برای ویندوز ۱۰ و ۱۱.</p>
-        <a class="btn btn-gold" data-download href="https://github.com/ahmadzaisv/simurgh/releases/latest/download/Simurgh-Setup.exe">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-          دانلود سیمرغ
-        </a>
+        <h2>پرسش‌ها</h2>
+        <h3>واقعاً رایگان است؟</h3>
+        <p>بله. سرویس هوش مصنوعی‌ای که وصل می‌کنید ممکن است هزینه داشته باشد — پلان ChatGPT یا Claude که از قبل دارید، کریدیت OpenRouter یا مصرف API. با Ollama روی کمپیوتر خودتان رایگان اجرا می‌شود.</p>
+        <h3>فایل‌ها و گفتگوهایم کجا می‌روند؟</h3>
+        <p>روی کمپیوتر شما می‌مانند: گفتگوها و تنظیمات در <code>%APPDATA%\Simurgh</code> و فایل‌هایی که می‌سازد در <code>Documents\Simurgh</code>. پرسش‌های شما فقط به سرویس هوش مصنوعی‌ای می‌رود که انتخاب کرده‌اید. ورودها و کلیدها را ویندوز رمزگذاری می‌کند. نه حسابی، نه اعلانی، نه ردیابی.</p>
+        <h3>آیا امن است که هوش مصنوعی از کمپیوترم استفاده کند؟</h3>
+        <p>هر قدم را نشان می‌دهد و پیش از هر کار مهم یا دائمی، و پیش از بستن هر پنجره‌ای که شما باز کرده بودید، می‌پرسد. <code>Ctrl+Alt+X</code> را فشار دهید — یا ماوس را به تندی به گوشهٔ بالا و چپ صفحه ببرید — تا بایستد.</p>
+        <h3>مک یا لینوکس؟</h3>
+        <p>هنوز نه — فقط ویندوز ۱۰ و ۱۱.</p>
+        <h3>چطور حذفش کنم؟</h3>
+        <p>Settings ویندوز ← Apps ← Installed apps ← Simurgh ← Uninstall. گفتگوها و تنظیمات شما در <code>%APPDATA%\Simurgh</code> می‌مانند تا وقتی که آن فولدر را خودتان پاک کنید.</p>
       </div>
     </section>
   </main>
 
   <footer>
     <div class="wrap">
-      <span>© ۲۰۲۶ سیمرغ</span>
+      <span>© ۲۰۲۶ بلال احمدزی</span>
       <a data-releases href="https://github.com/ahmadzaisv/simurgh/releases">همهٔ نسخه‌ها</a>
-      <span class="spacer"></span>
-      <a href="/" lang="en">English</a>
-      <a href="/ps/" lang="ps">پښتو</a>
+      <a href="https://github.com/ahmadzaisv/simurgh/issues">گزارش مشکل</a>
+      <span class="flags"><img src="../assets/flags/afghanistan.png" alt="" width="30" height="20"><img src="../assets/flags/india.png" alt="" width="30" height="20"><img src="../assets/flags/russia.png" alt="" width="30" height="20"></span>
     </div>
   </footer>
   <script src="../assets/site.js" defer></script>
