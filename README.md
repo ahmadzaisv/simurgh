@@ -1,9 +1,12 @@
 # Simurgh
 
-Simurgh is a free AI agent for Windows: it does the work on your PC — files, documents, the web, apps and
-settings — in English, Pashto or Dari.
+The website for Simurgh — https://simurgh.onrender.com — where Simurgh is downloaded with a download key.
 
-**Download:** [Simurgh-Setup.exe](https://github.com/ahmadzaisv/simurgh/releases/latest/download/Simurgh-Setup.exe)
-(Windows 10 and 11, 64-bit) · [all versions](https://github.com/ahmadzaisv/simurgh/releases)
+- `site/` — the website (English, Pashto, Dari), a static site on Render.
+- `server/` — the download server on Render (`simurgh-download`): a download key gives one download link; the
+  installed app gets its updates from it. It keeps only hashes of the keys; the owner's PC signs its requests
+  (`server/owner-public.pem` is the public half). `npm test` runs its tests.
+- `tools/simurgh-keys.mjs` — the owner's tool: keeps the list of keys on the owner's PC, takes used ones off it,
+  makes new ones, and uploads new versions. `tools/site-check.mjs` tries the site and the server together locally.
 
-This repository holds the website (`site/`, deployed on Render with `render.yaml`) and the releases.
+`render.yaml` describes both services.

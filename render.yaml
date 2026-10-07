@@ -1,5 +1,8 @@
-# Render Blueprint: the Simurgh website as a static site (no build step; the files are in site/).
-# The installer is not here - it is attached to the GitHub release (too big for a Git repository).
+# Render Blueprint.
+#   simurgh            the website (static, the files in site/)
+#   simurgh-download   the download server (server/server.mjs): download keys -> the installer, and the installed
+#                      app's updates. Its disk keeps the key hashes, who used which key, and the release files.
+#                      Nothing secret is configured here: the owner's PC signs its requests (server/owner-public.pem).
 services:
   - name: simurgh
     type: web
@@ -16,8 +19,29 @@ services:
         value: strict-origin-when-cross-origin
       - path: /assets/*
         name: Cache-Control
-        value: public, max-age=86400
+        value: public, max-age=3600
     routes:
       - source: /download
-        destination: https://github.com/ahmadzaisv/simurgh/releases/latest/download/Simurgh-Setup.exe
+        destination: /#download
         type: redirect
+
+  - name: simurgh-download
+    type: web
+    runtime: node
+    plan: starter
+    region: frankfurt
+    buildCommand: echo "plain Node - nothing to install"
+    startCommand: node server/server.mjs
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATA_DIR
+        value: /var/data
+      - key: SITE_ORIGINS
+        value: https://simurgh.onrender.com
+    disk:
+      name: simurgh-download-data
+      mountPath: /var/data
+      sizeGB: 1
