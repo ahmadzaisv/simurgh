@@ -3,11 +3,12 @@
   "private": true,
   "description": "The Simurgh website (site/) and its download server (server/).",
   "engines": {
-    "node": ">=22"
+    "node": ">=22.13"
   },
   "scripts": {
     "start": "node server/server.mjs",
     "test": "node --test \"server/test/*.test.mjs\"",
-    "check:site": "node tools/site-check.mjs .site-check"
+    "check:site": "node tools/site-check.mjs .site-check",
+    "check:voice": "node tools/voice-check.mjs .voice-check"
   }
 }

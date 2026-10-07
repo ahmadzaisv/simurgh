@@ -44,6 +44,7 @@ before(async () => {
 });
 after(() => {
   srv.server.close();
+  srv.voice.db.close();
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 

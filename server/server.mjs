@@ -15,6 +15,7 @@ import { normalizeKey, keyHash } from './keys.mjs';
 import { verifyRequest, sha256 } from './auth.mjs';
 import { clientIp, placeOf, deviceOf } from './who.mjs';
 import { Store } from './store.mjs';
+import { createVoice } from './voice.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DAY = 24 * 60 * 60 * 1000;
@@ -27,6 +28,7 @@ const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=
 
 export function createServer({ dataDir, publicKeyPem, origins = [], siteDir = null, lookup, now = () => Date.now(), log = console.log } = {}) {
   const store = new Store(dataDir);
+  const voice = createVoice({ dir: path.join(dataDir, 'voice'), now, log }); // the Pashto voice project (voice.mjs)
   const seen = new Map(); // signatures already used
   const fails = new Map(); // address -> times of wrong keys
   const db = () => store.db;
@@ -35,7 +37,7 @@ export function createServer({ dataDir, publicKeyPem, origins = [], siteDir = nu
     const o = req.headers.origin;
     if (!o) return {};
     const ok = origins.includes(o) || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(o);
-    return ok ? { 'access-control-allow-origin': o, vary: 'Origin', 'access-control-allow-methods': 'GET, POST, OPTIONS', 'access-control-allow-headers': 'content-type', 'access-control-max-age': '600' } : {};
+    return ok ? { 'access-control-allow-origin': o, vary: 'Origin', 'access-control-allow-methods': 'GET, POST, OPTIONS', 'access-control-allow-headers': 'content-type, x-voice-text, x-voice-code', 'access-control-max-age': '600' } : {};
   };
   const send = (res, status, body, headers = {}) => {
     const json = typeof body !== 'string';
@@ -167,6 +169,10 @@ export function createServer({ dataDir, publicKeyPem, origins = [], siteDir = nu
       return send(res, 401, { error: v.why });
     }
     const body = raw.length ? JSON.parse(raw.toString('utf8')) : {};
+    if (url.pathname.startsWith('/admin/voice/')) {
+      const r = voice.admin(req, res, url, body, { send, sendFile });
+      if (r !== false) return r;
+    }
     const keys = db().keys;
 
     if (req.method === 'GET' && url.pathname === '/admin/state') {
@@ -249,6 +255,10 @@ export function createServer({ dataDir, publicKeyPem, origins = [], siteDir = nu
         if (!file || !fs.existsSync(file)) return send(res, 404, { error: 'missing' });
         return sendFile(req, res, file, { extra: { 'cache-control': u[2].endsWith('.yml') ? 'no-cache' : 'public, max-age=3600' } });
       }
+      if (url.pathname.startsWith('/voice/api/')) {
+        const r = await voice.handle(req, res, url, { send, readBody, sendFile, ip: clientIp(req), cors });
+        if (r !== false) return;
+      }
       if (url.pathname.startsWith('/admin/')) return await admin(req, res, url);
       // a local test run serves the website too; on Render the website is its own static site
       if (siteDir && (req.method === 'GET' || req.method === 'HEAD')) {
@@ -265,7 +275,7 @@ export function createServer({ dataDir, publicKeyPem, origins = [], siteDir = nu
       else res.destroy();
     }
   });
-  return { server, store };
+  return { server, store, voice };
 }
 
 // ---------------------------------------------------------------- run

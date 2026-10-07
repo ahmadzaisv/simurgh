@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="ps" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>پښتو غږ — خپل غږ د پښتو ژبې لپاره ورکړئ</title>
+  <meta name="description" content="خپل غږ ثبت کړئ، چې کمپیوټر او ټیلیفون پښتو ښه واوري او ولیکي. نوم نه غوښتل کېږي.">
+  <meta name="theme-color" content="#15254f">
+  <meta name="simurgh-api" content="https://simurgh-download.onrender.com">
+  <link rel="icon" href="../assets/icon.png" type="image/png">
+  <meta property="og:title" content="پښتو غږ — خپل غږ د پښتو ژبې لپاره ورکړئ">
+  <meta property="og:description" content="څو جملې ولولئ، یا څو خبرې وکړئ: کمپیوټر به پښتو ښه واوري او ولیکي.">
+  <meta property="og:image" content="../assets/logo-512.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&amp;display=swap">
+  <link rel="stylesheet" href="voice.css">
+</head>
+<body>
+  <header class="bar">
+    <a class="brand" href="./"><img src="../assets/icon.png" alt="" width="28" height="28"><span>پښتو غږ</span></a>
+    <span class="total" data-total></span>
+  </header>
+
+  <main>
+    <!-- before joining: what this is, the promise, the consent -->
+    <section class="page" data-page="intro">
+      <h1>خپل غږ د پښتو ژبې لپاره ورکړئ</h1>
+      <p class="lead">موږ غواړو کمپیوټر او ټیلیفون پښتو ښه واوري او ولیکي — لکه انګلیسي چې یې اوري. د دې لپاره د ډېرو پښتنو غږونو ته اړتیا ده: ښځو او نارینه وو، ځوانانو او مشرانو، د هرې سیمې او لهجې.</p>
+      <ul class="how">
+        <li><b>ولولئ:</b> یوه لنډه جمله درښودل کېږي، تاسو یې په خپل غږ لولئ.</li>
+        <li><b>خبرې وکړئ:</b> د یوې موضوع په اړه څو ثانیې په خپله خوښه خبرې کوئ.</li>
+        <li><b>وګورئ:</b> د نورو غږونه اورئ او وایاست چې سم ثبت شوي که نه.</li>
+      </ul>
+      <div class="promise">
+        <p><b>ستاسو غږ خوندي دی:</b> یوازې د سیمرغ د پښتو غږ پېژندنې د روزلو لپاره کارول کېږي او هېچا ته نه ورکول کېږي. نوم، تلیفون یا بریښنالیک نه غوښتل کېږي. یو پټ کوډ درکول کېږي؛ په هغه سره هر وخت خپل ټول غږونه ړنګولی شئ.</p>
+      </div>
+      <form class="join" data-join>
+        <fieldset>
+          <legend>د خوښې پوښتنې (که نه غواړئ، پرېږدئ یې)</legend>
+          <label>لهجه
+            <select name="dialect">
+              <option value="">— غوره کړئ —</option>
+              <option value="southern">سوېلي (کندهاري، هلمندي…)</option>
+              <option value="northern">شمالي (یوسفزي، پېښوري…)</option>
+              <option value="eastern">ختیځه (ننګرهاري، کونړي…)</option>
+              <option value="central">منځنۍ (وردګي، لوګري، غزنیچي…)</option>
+              <option value="karlani">کرلاڼي (وزیري، مسیدي، خوستي…)</option>
+              <option value="other">بله</option>
+            </select>
+          </label>
+          <label>ولایت یا سیمه
+            <input name="region" list="regions" maxlength="40" autocomplete="off">
+            <datalist id="regions">
+              <option value="کابل"><option value="کندهار"><option value="هلمند"><option value="ننګرهار"><option value="کونړ"><option value="لغمان"><option value="لوګر"><option value="وردګ"><option value="غزني"><option value="پکتیا"><option value="پکتیکا"><option value="خوست"><option value="زابل"><option value="اروزګان"><option value="فراه"><option value="نیمروز"><option value="هرات"><option value="بادغیس"><option value="کندز"><option value="بغلان"><option value="بلخ"><option value="فاریاب"><option value="نورستان"><option value="کاپیسا"><option value="پروان"><option value="پېښور"><option value="مردان"><option value="سوات"><option value="کوټه"><option value="باجوړ"><option value="وزیرستان"><option value="بهر له هېواده">
+            </datalist>
+          </label>
+          <label>جنس
+            <select name="gender"><option value="">— غوره کړئ —</option><option value="female">ښځه</option><option value="male">نارینه</option></select>
+          </label>
+          <label>عمر
+            <select name="age"><option value="">— غوره کړئ —</option><option>13-17</option><option>18-29</option><option>30-44</option><option>45-59</option><option>60+</option></select>
+          </label>
+        </fieldset>
+        <label class="consent"><input type="checkbox" name="consent" required> زه ۱۸ کلن یا تر دې زیات یم (یا مې مور یا پلار اجازه راکړې)، او موافق یم چې زما غږ د سیمرغ د پښتو ماډلونو د روزلو لپاره وکارول شي.</label>
+        <button class="big" type="submit">پیل کړئ</button>
+        <p class="msg" data-msg></p>
+      </form>
+      <details class="have-code">
+        <summary>مخکې مو کوډ اخیستی؟</summary>
+        <form data-have-code>
+          <input name="code" dir="ltr" maxlength="12" autocomplete="off" spellcheck="false" aria-label="کوډ" placeholder="abcd23efgh45">
+          <button type="submit">دوام ورکړئ</button>
+        </form>
+        <p class="msg" data-code-msg></p>
+      </details>
+    </section>
+
+    <!-- after joining -->
+    <section class="page" data-page="work" hidden>
+      <nav class="tabs" role="tablist">
+        <button role="tab" data-tab="read" aria-selected="true">ولولئ</button>
+        <button role="tab" data-tab="speak">خبرې وکړئ</button>
+        <button role="tab" data-tab="check">وګورئ</button>
+        <button role="tab" data-tab="me">زما</button>
+      </nav>
+
+      <div class="panel" data-panel="read">
+        <p class="hint">لاندې جمله په غږ ولولئ — په ارامۍ او لکه هره ورځ چې خبرې کوئ.</p>
+        <div class="card sentence" data-sentence dir="rtl"></div>
+        <div class="rec" data-rec="read"></div>
+        <div class="row small-actions">
+          <button class="link" data-skip>بله جمله</button>
+          <button class="link" data-report>دا جمله سمه نه ده</button>
+        </div>
+      </div>
+
+      <div class="panel" data-panel="speak" hidden>
+        <p class="hint">د دې موضوع په اړه ۱۰ تر ۶۰ ثانیو پورې په خپله خوښه خبرې وکړئ. پوښتنې هم وکړئ — هغه هم ډېرې ګټورې دي.</p>
+        <div class="card prompt" data-prompt></div>
+        <div class="rec" data-rec="speak"></div>
+        <div class="row small-actions"><button class="link" data-other-topic>بله موضوع</button></div>
+      </div>
+
+      <div class="panel" data-panel="check" hidden>
+        <p class="hint">غږ واورئ. که هماغه څه چې لیکل شوي سم ویل شوي وي، «سم دی» ووایاست.</p>
+        <div class="card" data-check>
+          <audio controls preload="auto" data-audio></audio>
+          <div class="check-text" data-check-text dir="rtl"></div>
+          <textarea data-fix dir="rtl" rows="3" hidden></textarea>
+        </div>
+        <div class="row choices">
+          <button class="yes" data-yes>✓ سم دی</button>
+          <button class="no" data-no>✗ سم نه دی</button>
+          <button class="fix" data-fix-btn hidden>✎ متن سم کړئ</button>
+        </div>
+        <p class="msg" data-check-msg></p>
+      </div>
+
+      <div class="panel" data-panel="me" hidden>
+        <div class="card">
+          <p>ستاسو پټ کوډ:</p>
+          <p class="code" data-code dir="ltr"></p>
+          <p class="small">دا کوډ وساتئ (عکس ترې واخلئ یا یې ولیکئ). په بل ټیلیفون یا کمپیوټر کې په همدې کوډ دوام ورکولی شئ، او په همدې کوډ خپل ټول غږونه ړنګولی شئ. چا ته یې مه ورکوئ.</p>
+          <button class="link" data-copy-code>کوډ کاپي کړئ</button>
+        </div>
+        <div class="card mine" data-mine></div>
+        <div class="card">
+          <p>خپلو ملګرو او کورنۍ ته یې ولېږئ — هر غږ مرسته کوي:</p>
+          <button class="big secondary" data-share>شریکول</button>
+        </div>
+        <details class="danger">
+          <summary>زما ټول غږونه ړنګ کړئ</summary>
+          <p>ستاسو ټول ثبت شوي غږونه او کوډ به د تل لپاره ړنګ شي.</p>
+          <button class="no" data-forget>هو، هر څه ړنګ کړئ</button>
+          <p class="msg" data-forget-msg></p>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot"><span data-stats></span></footer>
+  <template id="recorder">
+    <div class="recorder">
+      <button class="mic" data-mic aria-label="ثبتول"><span class="dot"></span></button>
+      <div class="rec-state" data-state>د ثبتولو لپاره ټک ووهئ</div>
+      <div class="meter" data-meter><i></i></div>
+      <div class="after" data-after hidden>
+        <audio controls data-play></audio>
+        <div class="row">
+          <button class="big" data-send>ولېږئ</button>
+          <button class="link" data-redo>بیا ثبت کړئ</button>
+        </div>
+      </div>
+    </div>
+  </template>
+  <script src="voice.js" defer></script>
+</body>
+</html>

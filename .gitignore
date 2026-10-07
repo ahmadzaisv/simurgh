@@ -5,3 +5,6 @@ Thumbs.db
 .data/
 .site-check/
 node_modules/
+*.refused.txt
+*.clean.txt
+.voice-check/

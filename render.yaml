@@ -1,7 +1,9 @@
 # Render Blueprint.
 #   simurgh            the website (static, the files in site/)
-#   simurgh-download   the download server (server/server.mjs): download keys -> the installer, and the installed
-#                      app's updates. Its disk keeps the key hashes, who used which key, and the release files.
+#   simurgh-download   the download server (server/server.mjs): download keys -> the installer, the installed
+#                      app's updates, and پښتو غږ (the Pashto voice project, /voice/api). Its disk keeps the key
+#                      hashes, who used which key, the release files, and the voice recordings (10 GB: about 700
+#                      hours of speech at 32 kbit/s).
 #                      Nothing secret is configured here: the owner's PC signs its requests (server/owner-public.pem).
 services:
   - name: simurgh
@@ -36,7 +38,7 @@ services:
     autoDeploy: true
     envVars:
       - key: NODE_VERSION
-        value: "22"
+        value: "24"
       - key: DATA_DIR
         value: /var/data
       - key: SITE_ORIGINS
@@ -44,4 +46,4 @@ services:
     disk:
       name: simurgh-download-data
       mountPath: /var/data
-      sizeGB: 1
+      sizeGB: 10
