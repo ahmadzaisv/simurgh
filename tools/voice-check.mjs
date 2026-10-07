@@ -242,6 +242,11 @@ try {
   await ev(`(() => { const f = document.querySelector('[data-have-code]'); f.code.value = ' ${code.toUpperCase()} '; f.requestSubmit(); return true; })()`);
   check('the code brings the speaker back', (await until(() => visible('[data-page="work"]'))) && (await ev(`localStorage.getItem('pashto-voice-code')`)) === code);
 
+  // from Simurgh's Notepad: the code after the #, which the page takes and removes from the address
+  await ev(`localStorage.clear(), true`);
+  await go(`${BASE}/voice/#code=${code}`);
+  check('opened from Simurgh with the code: straight to "mine", the code gone from the address', (await until(() => visible('[data-panel="me"]'))) && (await text('[data-code]')) === code && (await ev('location.hash')) === '');
+
   // dark
   await b.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'dark' }] }, S);
   await click('[data-tab="read"]');
