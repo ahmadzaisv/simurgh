@@ -38,7 +38,7 @@ const cfg = {
   simurgh: path.join(os.homedir(), 'Projects', 'simurgh'), // sherpa-onnx-node lives in Simurgh's own packages
   models: path.join(process.env.APPDATA || '', 'Simurgh', 'voice', 'models'),
   ffmpeg: ['C:/ProgramData/chocolatey/bin/ffmpeg.exe'].find((f) => fs.existsSync(f)) || 'ffmpeg',
-  ...readJson(path.join(HOME, 'config.json'), {}),
+  ...(readJson(path.join(HOME, 'config.json'), {}).server ? { server: readJson(path.join(HOME, 'config.json'), {}).server } : {}), // the keys' server; not their folder
   ...readJson(path.join(HOME, 'pashto-voice.json'), {}),
 };
 const LOG = path.join(cfg.folder, 'log.txt');

@@ -380,6 +380,14 @@
     }
   };
 
+  // Simurgh's Notepad opens this page with its code after the # (a browser never sends that part to a server)
+  const fromApp = /^#code=([a-z0-9]{12})$/.exec(location.hash);
+  if (fromApp) {
+    code = fromApp[1];
+    keep.set('pashto-voice-code', code);
+    keep.set('pashto-voice-tab', 'me');
+    history.replaceState(null, '', location.pathname);
+  }
   totals();
   if (code) enter();
 })();
