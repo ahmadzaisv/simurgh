@@ -381,13 +381,17 @@
   };
 
   // Simurgh's Notepad opens this page with its code after the # (a browser never sends that part to a server)
-  const fromApp = /^#code=([a-z0-9]{12})$/.exec(location.hash);
-  if (fromApp) {
-    code = fromApp[1];
+  const fromApp = () => {
+    const m = /^#code=([a-z0-9]{12})$/.exec(location.hash);
+    if (!m) return false;
+    code = m[1];
     keep.set('pashto-voice-code', code);
     keep.set('pashto-voice-tab', 'me');
     history.replaceState(null, '', location.pathname);
-  }
+    return true;
+  };
+  addEventListener('hashchange', () => fromApp() && enter());
+  fromApp();
   totals();
   if (code) enter();
 })();
