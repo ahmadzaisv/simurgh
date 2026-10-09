@@ -1,36 +1,29 @@
 // Simurgh's download server (Render web service "simurgh-download", disk at DATA_DIR):
-//   POST /api/redeem {key, device}   a download key -> a download link (the key is used up; when, where, what device)
-//   GET  /d/<link>                   the installer, for 24 hours (resumable)
+//   GET  /download                   the installer of the newest version - free, no key (resumable)
 //   GET  /api/latest                 the version and size shown on the website
-//   GET  /u/<channel>/<file>         the installed app's updates (latest.yml + installer; the channel name is only
-//                                    in the app, so the website's key stays the way in)
-//   /admin/...                       the owner's tool (signed on the owner's PC - see auth.mjs): add keys, read
-//                                    which were used, upload a new version
+//   GET  /u/<channel>/<file>         the installed app's updates (latest.yml + installer)
+//   /admin/...                       the owner's tool (signed on the owner's PC - see auth.mjs): upload a new version,
+//                                    read the release and how many times each version was downloaded
+// (Until 2026-10-09 a download needed a one-time key; the owner removed that: anyone may download.)
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { normalizeKey, keyHash } from './keys.mjs';
 import { verifyRequest, sha256 } from './auth.mjs';
-import { clientIp, placeOf, deviceOf } from './who.mjs';
+import { clientIp } from './who.mjs';
 import { Store } from './store.mjs';
 import { createVoice } from './voice.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const DAY = 24 * 60 * 60 * 1000;
-const LINK_MS = DAY; // a download link works this long
-const LINK_STARTS = 10; // ...for this many downloads from the start (resuming doesn't count)
-const FAILS_PER_HOUR = 10; // wrong or used keys from one address before it has to wait
 const MAX_UPLOAD = 700 * 1024 * 1024;
 
 const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.yml': 'text/yaml; charset=utf-8', '.json': 'application/json' };
 
-export function createServer({ dataDir, publicKeyPem, origins = [], siteDir = null, lookup, now = () => Date.now(), log = console.log } = {}) {
+export function createServer({ dataDir, publicKeyPem, origins = [], siteDir = null, now = () => Date.now(), log = console.log } = {}) {
   const store = new Store(dataDir);
   const voice = createVoice({ dir: path.join(dataDir, 'voice'), now, log }); // the Pashto voice project (voice.mjs)
   const seen = new Map(); // signatures already used
-  const fails = new Map(); // address -> times of wrong keys
   const db = () => store.db;
 
   const corsFor = (req) => {
@@ -89,69 +82,16 @@ export function createServer({ dataDir, publicKeyPem, origins = [], siteDir = nu
     fs.createReadStream(file, { start, end }).pipe(res);
   };
 
-  const failedTooOften = (ip) => {
-    const t = now();
-    const list = (fails.get(ip) || []).filter((x) => t - x < 60 * 60 * 1000);
-    fails.set(ip, list);
-    return list.length >= FAILS_PER_HOUR;
-  };
-  const failed = (ip) => fails.set(ip, [...(fails.get(ip) || []), now()]);
-
   // ---------------------------------------------------------------- the website's side
-  async function redeem(req, res, cors) {
-    const ip = clientIp(req);
-    if (failedTooOften(ip)) return send(res, 429, { error: 'wait', message: 'Too many wrong keys. Try again in an hour.' }, cors);
-    let body;
-    try {
-      body = JSON.parse((await readBody(req, 16 * 1024)).toString('utf8') || '{}');
-    } catch {
-      return send(res, 400, { error: 'bad request' }, cors);
-    }
-    const key = normalizeKey(body.key);
-    if (!key) {
-      failed(ip);
-      return send(res, 400, { error: 'format' }, cors);
-    }
-    const hash = keyHash(key);
-    const entry = db().keys[hash];
-    if (!entry) {
-      failed(ip);
-      return send(res, 404, { error: 'unknown' }, cors);
-    }
-    if (entry.used) {
-      failed(ip);
-      return send(res, 410, { error: 'used' }, cors);
-    }
-    const rel = db().release;
-    if (!rel || !store.filePath(rel.channel, rel.file) || !fs.existsSync(store.filePath(rel.channel, rel.file))) return send(res, 503, { error: 'not ready', message: 'The download is not ready yet. Your key was not used - try again later.' }, cors);
-    const device = deviceOf(req.headers['user-agent'], body.device || {});
-    entry.used = { at: new Date(now()).toISOString(), version: rel.version, ...device, city: '', region: '', country: '' };
-    const token = crypto.randomBytes(24).toString('base64url');
-    db().tokens[token] = { hash, created: now(), expires: now() + LINK_MS, starts: 0 };
-    store.dropOldTokens(now());
-    store.save();
-    log(`key used (${device.os}, ${device.browser})`);
-    send(res, 200, { url: `/d/${token}`, version: rel.version, size: rel.size, expires: new Date(now() + LINK_MS).toISOString() }, cors);
-    // the place, after the answer (the visitor doesn't wait for it); the address itself is not kept
-    placeOf(ip, { lookup, countryHint: String(req.headers['cf-ipcountry'] || '') })
-      .then((place) => {
-        Object.assign(entry.used, place);
-        store.save();
-      })
-      .catch(() => {});
-  }
-
-  function download(req, res, token) {
-    const t = db().tokens[token];
-    if (!t || t.expires < now()) return send(res, 410, 'This download link has expired. Each key gives one link that works for 24 hours.\n');
+  /** The newest installer, for anyone: counted per version (a download from its start; resuming is not counted). */
+  function download(req, res) {
     const rel = db().release;
     const file = rel && store.filePath(rel.channel, rel.file);
-    if (!file) return send(res, 503, 'The download is not ready yet.\n');
+    if (!file || !fs.existsSync(file)) return send(res, 503, 'The download is not ready yet. Try again in a few minutes.\n');
     const fromStart = !req.headers.range || /^bytes=0-/.test(String(req.headers.range));
     if (req.method === 'GET' && fromStart) {
-      if (t.starts >= LINK_STARTS) return send(res, 429, 'This link has been used too many times. Ask for a new key.\n');
-      t.starts++;
-      store.save();
+      db().downloads[rel.version] = (db().downloads[rel.version] || 0) + 1;
+      store.saveSoon();
     }
     sendFile(req, res, file, { name: 'Simurgh-Setup.exe', type: 'application/vnd.microsoft.portable-executable', extra: { 'cache-control': 'no-store' } });
   }
@@ -173,26 +113,7 @@ export function createServer({ dataDir, publicKeyPem, origins = [], siteDir = nu
       const r = voice.admin(req, res, url, body, { send, sendFile });
       if (r !== false) return r;
     }
-    const keys = db().keys;
-
-    if (req.method === 'GET' && url.pathname === '/admin/state') {
-      const used = [];
-      const unused = [];
-      for (const [hash, e] of Object.entries(keys)) (e.used ? used.push({ hash, ...e.used }) : unused.push(hash));
-      return send(res, 200, { unused, used, release: db().release });
-    }
-    if (req.method === 'POST' && url.pathname === '/admin/keys') {
-      let added = 0;
-      for (const h of Array.isArray(body.add) ? body.add : []) {
-        if (!/^[0-9a-f]{64}$/.test(h) || keys[h]) continue;
-        keys[h] = { added: new Date(now()).toISOString() };
-        added++;
-      }
-      let removed = 0;
-      for (const h of Array.isArray(body.remove) ? body.remove : []) if (keys[h] && !keys[h].used) delete keys[h], removed++;
-      store.save();
-      return send(res, 200, { added, removed, unused: Object.values(keys).filter((e) => !e.used).length });
-    }
+    if (req.method === 'GET' && url.pathname === '/admin/state') return send(res, 200, { release: db().release, downloads: db().downloads });
     const up = /^\/admin\/files\/([^/]+)\/([^/]+)$/.exec(url.pathname);
     if (upload && up) {
       const file = store.filePath(up[1], up[2]);
@@ -246,9 +167,9 @@ export function createServer({ dataDir, publicKeyPem, origins = [], siteDir = nu
         const r = db().release;
         return send(res, 200, r ? { version: r.version, size: r.size } : { version: null }, { ...cors, 'cache-control': 'public, max-age=60' });
       }
-      if (url.pathname === '/api/redeem' && req.method === 'POST') return await redeem(req, res, cors);
-      const d = /^\/d\/([A-Za-z0-9_-]{20,64})$/.exec(url.pathname);
-      if (d && (req.method === 'GET' || req.method === 'HEAD')) return download(req, res, d[1]);
+      if ((url.pathname === '/download' || url.pathname === '/download/Simurgh-Setup.exe') && (req.method === 'GET' || req.method === 'HEAD')) return download(req, res);
+      // the old one-time links and keys: gone - the page now has a plain download
+      if ((url.pathname === '/api/redeem' && req.method === 'POST') || /^\/d\//.test(url.pathname)) return send(res, 410, { error: 'gone', message: 'Download keys are no longer needed: download from https://simurgh.onrender.com' }, cors);
       const u = /^\/u\/([^/]+)\/([^/]+)$/.exec(url.pathname);
       if (u && (req.method === 'GET' || req.method === 'HEAD')) {
         const file = store.filePath(u[1], u[2]);

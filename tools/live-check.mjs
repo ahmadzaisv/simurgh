@@ -1,14 +1,14 @@
 // The live website and download server, from a headless Edge with its own temporary profile (the person's browser is
-// never used): the page, the version from the server, and one key (a test key from simurgh-keys.mjs test-key) going
-// through the download box. The download itself is refused by this browser - only the start is checked.
-//   node tools/live-check.mjs <out dir> <test key>
+// never used): the page, the version from the server, no download key anywhere, and the Download button handing the
+// browser the installer (the download itself is refused by this browser - only its start is checked).
+//   node tools/live-check.mjs <out dir> [<version expected>]
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 
 const OUT = path.resolve(process.argv[2] || '.');
-const KEY = process.argv[3];
+const VERSION = process.argv[3] || '';
 fs.mkdirSync(OUT, { recursive: true });
 const SITE = 'https://simurgh.onrender.com';
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'simurgh-live-check-'));
@@ -53,22 +53,15 @@ try {
   await go(`${SITE}/`);
   const text = await ev('document.body.innerText');
   check('the live page: the download and Notepad only', /Download Simurgh/.test(text) && /Simurgh Notepad/.test(text) && !/Why I made|Bilal|What it does|Questions/.test(text));
-  check('the version from the download server', /Version 0\.1\.14 · 114 MB/.test(await ev(`document.querySelector('[data-version]').textContent`)), await ev(`document.querySelector('[data-version]').textContent`));
-  check('the old GitHub download link is gone', !(await ev(`document.documentElement.innerHTML`)).includes('github.com/ahmadzaisv/simurgh/releases'));
-  if (KEY) {
-    await ev(`(() => { const i = document.querySelector('#key'); i.value = ${JSON.stringify(KEY)}; i.dispatchEvent(new Event('input', { bubbles: true })); document.querySelector('[data-keybox] button').click(); return true; })()`);
-    let msg = '';
-    for (let i = 0; i < 60 && !/started|valid|used|reach/.test(msg); i++) {
-      await sleep(250);
-      msg = await ev(`document.querySelector('.msg').innerText`);
-    }
-    check('a key on the live site: the download starts', /download has started \(Simurgh-Setup\.exe, 114 MB\)/.test(msg), msg);
-    await sleep(1500);
-    check('...the browser was handed the installer', events.some((e) => e.method === 'Browser.downloadWillBegin' && e.params.suggestedFilename === 'Simurgh-Setup.exe'), events.filter((e) => /download/i.test(e.method)).map((e) => e.params.suggestedFilename).join(','));
-    await shot('live-en.png');
-  }
+  check('no download key on the live page', !/download key|Each key works once/i.test(text) && !(await ev(`!!document.querySelector('#key, [data-keybox]')`)));
+  const v = await ev(`document.querySelector('[data-version]').textContent`);
+  check('the version from the download server', /^Version \d+\.\d+\.\d+ · \d+ MB$/.test(v) && (!VERSION || v.includes(VERSION)), v);
+  await ev(`document.querySelector('[data-download]').click()`);
+  for (let i = 0; i < 40 && !events.some((e) => e.method === 'Browser.downloadWillBegin'); i++) await sleep(250);
+  check('the Download button hands the browser the installer', events.some((e) => e.method === 'Browser.downloadWillBegin' && e.params.suggestedFilename === 'Simurgh-Setup.exe'), events.filter((e) => /download/i.test(e.method)).map((e) => e.params.suggestedFilename).join(','));
+  await shot('live-en.png');
   await go(`${SITE}/ps/`);
-  check('the live Pashto page', /سیمرغ ډاونلوډ کړئ/.test(await ev('document.body.innerText')) && /نسخه 0\.1\.14، 114 MB/.test(await ev(`document.querySelector('[data-version]').textContent`)));
+  check('the live Pashto page with its button', /سیمرغ ډاونلوډ کړئ/.test(await ev('document.body.innerText')) && (await ev(`document.querySelector('[data-download]')?.innerText.trim()`)) === 'د وینډوز لپاره ډاونلوډ');
   await shot('live-ps.png');
   await send('Browser.close').catch(() => {});
   ws.close();
