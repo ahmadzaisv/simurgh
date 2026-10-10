@@ -111,6 +111,29 @@ test('the owner uploads a release; anyone downloads it - whole, resumed, counted
   assert.equal((await fetch(`${base}/u/${CHANNEL}/..%2F..%2Fdb.json`)).status, 404);
 });
 
+test("a clip for Instagram: the owner's upload at a public link as video/mp4, deleted after, old ones cleared", async () => {
+  const clip = crypto.randomBytes(5000);
+  const old = path.join(tmp, 'data', 'files', 'clip-OLDoldOLDoldOLDold');
+  fs.mkdirSync(old, { recursive: true });
+  fs.writeFileSync(path.join(old, 'c.mp4'), 'x');
+  const twoDaysAgo = new Date(Date.now() - 48 * 3600 * 1000);
+  fs.utimesSync(old, twoDaysAgo, twoDaysAgo);
+  const p = '/admin/files/clip-AbCdEfGh12345678xyz/01-hook.mp4';
+  assert.equal((await adminCall('PUT', p, { buf: clip, priv: crypto.generateKeyPairSync('ed25519').privateKey.export({ type: 'pkcs8', format: 'pem' }) })).status, 401, 'only the owner');
+  assert.equal((await adminCall('PUT', p, { buf: clip })).status, 200);
+  const r = await fetch(`${base}/u/clip-AbCdEfGh12345678xyz/01-hook.mp4`);
+  assert.equal(r.status, 200);
+  assert.equal(r.headers.get('content-type'), 'video/mp4');
+  assert.ok(Buffer.from(await r.arrayBuffer()).equals(clip));
+  assert.equal(fs.existsSync(old), false, 'a clip left over for two days is cleared');
+  assert.equal((await fetch(base + p, { method: 'DELETE' })).status, 401, 'nobody else deletes');
+  assert.equal((await adminCall('DELETE', p)).status, 200);
+  assert.equal((await fetch(`${base}/u/clip-AbCdEfGh12345678xyz/01-hook.mp4`)).status, 404);
+  assert.equal(fs.existsSync(path.join(tmp, 'data', 'files', 'clip-AbCdEfGh12345678xyz')), false, 'its folder too');
+  // a release channel's files are never cleared as clips
+  assert.equal((await fetch(`${base}/u/${CHANNEL}/latest.yml`)).status, 200);
+});
+
 test('the store: counts saved a moment later, names checked', () => {
   const dir = path.join(tmp, 'store');
   const s = new Store(dir);

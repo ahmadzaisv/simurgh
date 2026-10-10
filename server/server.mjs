@@ -4,6 +4,9 @@
 //   GET  /u/<channel>/<file>         the installed app's updates (latest.yml + installer)
 //   /admin/...                       the owner's tool (signed on the owner's PC - see auth.mjs): upload a new version,
 //                                    read the release and how many times each version was downloaded
+//   /u/clip-<random>/<name>.mp4      a clip the owner's Simurgh put here for a few minutes, for Instagram to fetch
+//                                    (Instagram login takes a video only by a public link); Simurgh deletes it once
+//                                    Instagram has it, and any left after a day go when the next one comes
 // (Until 2026-10-09 a download needed a one-time key; the owner removed that: anyone may download.)
 import http from 'node:http';
 import fs from 'node:fs';
@@ -17,8 +20,10 @@ import { createVoice } from './voice.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const MAX_UPLOAD = 700 * 1024 * 1024;
+const CLIP_DIR = /^clip-[A-Za-z0-9_-]{16,}$/; // a clip's folder (its name is the secret part of the link)
+const CLIP_DAY = 24 * 3600 * 1000;
 
-const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.yml': 'text/yaml; charset=utf-8', '.json': 'application/json' };
+const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.yml': 'text/yaml; charset=utf-8', '.json': 'application/json', '.mp4': 'video/mp4' };
 
 export function createServer({ dataDir, publicKeyPem, origins = [], siteDir = null, now = () => Date.now(), log = console.log } = {}) {
   const store = new Store(dataDir);
@@ -96,6 +101,22 @@ export function createServer({ dataDir, publicKeyPem, origins = [], siteDir = nu
     sendFile(req, res, file, { name: 'Simurgh-Setup.exe', type: 'application/vnd.microsoft.portable-executable', extra: { 'cache-control': 'no-store' } });
   }
 
+  /** Clip folders left over for more than a day (Simurgh stopped before it deleted one): gone. */
+  function clearOldClips(keep) {
+    const dir = path.join(dataDir, 'files');
+    let names = [];
+    try {
+      names = fs.readdirSync(dir).filter((n) => CLIP_DIR.test(n) && n !== keep);
+    } catch {
+      return;
+    }
+    for (const n of names) {
+      try {
+        if (now() - fs.statSync(path.join(dir, n)).mtimeMs > CLIP_DAY) fs.rmSync(path.join(dir, n), { recursive: true, force: true });
+      } catch {}
+    }
+  }
+
   // ---------------------------------------------------------------- the owner's side (signed)
   async function admin(req, res, url) {
     const pathAndQuery = url.pathname + url.search;
@@ -140,7 +161,17 @@ export function createServer({ dataDir, publicKeyPem, origins = [], siteDir = nu
       }
       fs.renameSync(tmp, file);
       log(`uploaded ${up[1].slice(0, 4)}…/${up[2]} (${n} bytes)`);
+      if (CLIP_DIR.test(up[1])) clearOldClips(up[1]);
       return send(res, 200, { ok: true, size: n });
+    }
+    if (req.method === 'DELETE' && up) {
+      const file = store.filePath(up[1], up[2]);
+      if (!file) return send(res, 400, { error: 'bad name' });
+      fs.rmSync(file, { force: true });
+      // a clip's folder goes with its file
+      if (CLIP_DIR.test(up[1])) fs.rmSync(path.dirname(file), { recursive: true, force: true });
+      log(`deleted ${up[1].slice(0, 4)}…/${up[2]}`);
+      return send(res, 200, { ok: true });
     }
     if (req.method === 'POST' && url.pathname === '/admin/release') {
       const file = store.filePath(body.channel, body.file);
