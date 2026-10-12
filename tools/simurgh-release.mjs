@@ -6,6 +6,14 @@
 //   node simurgh-release.mjs status                    the release on the server and how often each version was downloaded
 //   node simurgh-release.mjs setup [<repo>]            makes the owner's signing key (once) and writes its public half
 //                                                      to <repo>/server/owner-public.pem
+//   node simurgh-release.mjs trust <device id> [<note>]  one of the owner's own computers: its id (Simurgh's Settings ->
+//                                                      About) is signed with the owner's key and added to
+//                                                      trusted-devices.json on the update channel. With the owner's
+//                                                      Claude account, Simurgh unlocks Opus, Fable, Extra high/Max
+//                                                      effort and Ultracode only on these computers.
+//   node simurgh-release.mjs untrust <device id>       takes a computer off that list
+//   node simurgh-release.mjs devices [--out <file>]    the list on the server (and a copy in <file>: Simurgh ships one
+//                                                      in electron/agent/trusted-devices.json for offline starts)
 // Files: %LOCALAPPDATA%\Simurgh Keys\ (config.json - the server and the update channel; owner-private.pem - keep it
 // private). Until 2026-10-09 this was simurgh-keys.mjs and also made one-time download keys; downloads are free now.
 import fs from 'node:fs';
@@ -103,6 +111,72 @@ async function release(dir, version) {
   log(`release ${r.release.version} is the download now (${Math.round(r.release.size / 1048576)} MB)`);
 }
 
+// ---------------------------------------------------------------- the owner's computers
+const TRUST_PREFIX = 'simurgh-trusted-device:'; // what is signed (Simurgh's electron/agent/ownerlock.js checks the same)
+const LIST = 'trusted-devices.json';
+
+async function serverList() {
+  const c = config();
+  if (!c.channel) throw new Error(`no update channel in ${CONFIG}`);
+  const r = await fetch(new URL(`/u/${c.channel}/${LIST}`, c.server), { cache: 'no-store', signal: AbortSignal.timeout(30000) });
+  if (r.status === 404) return { devices: [] };
+  if (!r.ok) throw new Error(`GET ${LIST}: ${r.status}`);
+  return r.json();
+}
+
+/** Only entries whose signature is the owner's, one per id. */
+function cleanList(list) {
+  const pub = crypto.createPublicKey(fs.readFileSync(PRIVATE, 'utf8'));
+  const seen = new Map();
+  for (const d of list.devices || []) {
+    const id = String(d?.id || '').toLowerCase();
+    try {
+      if (/^[0-9a-f]{64}$/.test(id) && crypto.verify(null, Buffer.from(TRUST_PREFIX + id), pub, Buffer.from(String(d.sig), 'base64'))) seen.set(id, { id, sig: d.sig, ...(d.note ? { note: String(d.note) } : {}) });
+    } catch {}
+  }
+  return { v: 1, devices: [...seen.values()] };
+}
+
+async function putList(list) {
+  const c = config();
+  const file = path.join(HOME, LIST);
+  writeAtomic(file, `${JSON.stringify(list, null, 2)}\n`);
+  await call('PUT', `/admin/files/${c.channel}/${LIST}`, { file });
+}
+
+async function trust(id, note) {
+  const clean = String(id || '').trim().toLowerCase().replace(/-/g, '');
+  if (!/^[0-9a-f]{64}$/.test(clean)) throw new Error("trust <device id>: the full id - 64 characters from Simurgh's Settings → About (Copy)");
+  const key = fs.readFileSync(PRIVATE, 'utf8');
+  const list = cleanList(await serverList());
+  const entry = { id: clean, sig: crypto.sign(null, Buffer.from(TRUST_PREFIX + clean), key).toString('base64'), ...(note ? { note: String(note).slice(0, 80) } : {}) };
+  list.devices = [...list.devices.filter((d) => d.id !== clean), entry];
+  await putList(list);
+  log(`trusted ${clean.slice(0, 12)}…${note ? ` (${note})` : ''} - ${list.devices.length} computer(s) on the list`);
+}
+
+async function untrust(id) {
+  const clean = String(id || '').trim().toLowerCase().replace(/-/g, '');
+  const list = cleanList(await serverList());
+  // the full id, or at least its short form (12 characters)
+  if (clean.length < 12) throw new Error('untrust <device id>: at least the 12 characters of the short id');
+  const left = list.devices.filter((d) => !d.id.startsWith(clean));
+  if (left.length === list.devices.length) throw new Error(`${id} is not on the list`);
+  list.devices = left;
+  await putList(list);
+  log(`took ${clean.slice(0, 12)}… off the list - ${left.length} computer(s) left`);
+}
+
+async function devices(out) {
+  const list = cleanList(await serverList());
+  for (const d of list.devices) console.log(`${d.id.slice(0, 12).toUpperCase().match(/.{4}/g).join('-')}  ${d.id}${d.note ? `  ${d.note}` : ''}`);
+  if (!list.devices.length) console.log('no computers on the list yet');
+  if (out) {
+    writeAtomic(out, `${JSON.stringify(list, null, 2)}\n`);
+    console.log(`wrote ${out}`);
+  }
+}
+
 function setup(repo) {
   fs.mkdirSync(HOME, { recursive: true });
   if (!fs.existsSync(PRIVATE)) {
@@ -124,7 +198,10 @@ try {
   if (cmd === 'release') await release(args[0], args[1]);
   else if (cmd === 'status') await status();
   else if (cmd === 'setup') setup(args[0]);
-  else console.log('simurgh-release.mjs release <dir> <version> | status | setup [<website repo>]');
+  else if (cmd === 'trust') await trust(args[0], args.slice(1).join(' '));
+  else if (cmd === 'untrust') await untrust(args[0]);
+  else if (cmd === 'devices') await devices(args[0] === '--out' ? args[1] : null);
+  else console.log('simurgh-release.mjs release <dir> <version> | status | setup [<website repo>] | trust <device id> [<note>] | untrust <device id> | devices [--out <file>]');
 } catch (e) {
   log(`error: ${e.message}`);
   process.exitCode = 1;

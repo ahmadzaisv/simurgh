@@ -167,3 +167,33 @@ test("the owner's tool uploads a release: installer, blockmap, then the feed; th
   assert.match(st, /release: 0\.1\.24/);
   assert.match(st, /downloads from the website: .*0\.1\.24: 1/);
 });
+
+test("the owner's computers: trust signs a device id onto the channel's list, uncached; untrust and devices", async () => {
+  const home = path.join(tmp, 'owner');
+  const tool = (...a) => new Promise((resolve, reject) => execFile(process.execPath, [TOOL, ...a], { env: { ...process.env, SIMURGH_RELEASE_HOME: home } }, (e, o, err) => (e ? reject(new Error(err || o)) : resolve(o))));
+  const listUrl = `${base}/u/${CHANNEL}/trusted-devices.json`;
+  assert.equal((await fetch(listUrl)).status, 404, 'no list yet');
+  const a = crypto.createHash('sha256').update('pc-a').digest('hex');
+  const b = crypto.createHash('sha256').update('vm-b').digest('hex');
+  assert.match(await tool('trust', a, "Bilal's PC"), /trusted .* 1 computer/);
+  assert.match(await tool('trust', b.toUpperCase(), 'SVR2025'), /2 computer/);
+  assert.match(await tool('trust', a, "Bilal's PC"), /2 computer/, 'the same computer twice: once on the list');
+  const r = await fetch(listUrl);
+  assert.equal(r.headers.get('cache-control'), 'no-cache', 'a change reaches the apps at once');
+  const list = await r.json();
+  assert.deepEqual(list.devices.map((d) => d.id).sort(), [a, b].sort());
+  for (const d of list.devices) assert.ok(crypto.verify(null, Buffer.from(`simurgh-trusted-device:${d.id}`), PUB, Buffer.from(d.sig, 'base64')), 'signed by the owner');
+  await assert.rejects(tool('trust', 'not-an-id'), /64 characters/);
+  // an entry someone else signed never survives the tool's next write
+  const other = crypto.generateKeyPairSync('ed25519').privateKey;
+  const forged = { id: 'f'.repeat(64), sig: crypto.sign(null, Buffer.from(`simurgh-trusted-device:${'f'.repeat(64)}`), other).toString('base64') };
+  assert.equal((await adminCall('PUT', `/admin/files/${CHANNEL}/trusted-devices.json`, { buf: Buffer.from(JSON.stringify({ devices: [...list.devices, forged] })) })).status, 200);
+  const out = path.join(tmp, 'embedded.json');
+  const shown = await tool('devices', '--out', out);
+  assert.ok(!shown.includes('ffff'), 'the forged entry is not shown');
+  assert.match(shown, /SVR2025/);
+  assert.equal(JSON.parse(fs.readFileSync(out, 'utf8')).devices.length, 2);
+  await assert.rejects(tool('untrust', b.slice(0, 6)), /12 characters/);
+  assert.match(await tool('untrust', b.slice(0, 12)), /1 computer\(s\) left/);
+  assert.deepEqual((await (await fetch(listUrl)).json()).devices.map((d) => d.id), [a]);
+});

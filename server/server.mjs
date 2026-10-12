@@ -1,7 +1,8 @@
 // Simurgh's download server (Render web service "simurgh-download", disk at DATA_DIR):
 //   GET  /download                   the installer of the newest version - free, no key (resumable)
 //   GET  /api/latest                 the version and size shown on the website
-//   GET  /u/<channel>/<file>         the installed app's updates (latest.yml + installer)
+//   GET  /u/<channel>/<file>         the installed app's updates (latest.yml + installer), and trusted-devices.json - the
+//                                    owner's own computers, each signed with his key (Simurgh's owner device lock)
 //   /admin/...                       the owner's tool (signed on the owner's PC - see auth.mjs): upload a new version,
 //                                    read the release and how many times each version was downloaded
 //   /u/clip-<random>/<name>.mp4      a clip the owner's Simurgh put here for a few minutes, for Instagram to fetch
@@ -205,7 +206,7 @@ export function createServer({ dataDir, publicKeyPem, origins = [], siteDir = nu
       if (u && (req.method === 'GET' || req.method === 'HEAD')) {
         const file = store.filePath(u[1], u[2]);
         if (!file || !fs.existsSync(file)) return send(res, 404, { error: 'missing' });
-        return sendFile(req, res, file, { extra: { 'cache-control': u[2].endsWith('.yml') ? 'no-cache' : 'public, max-age=3600' } });
+        return sendFile(req, res, file, { extra: { 'cache-control': /\.(yml|json)$/.test(u[2]) ? 'no-cache' : 'public, max-age=3600' } });
       }
       if (url.pathname.startsWith('/voice/api/')) {
         const r = await voice.handle(req, res, url, { send, readBody, sendFile, ip: clientIp(req), cors });
