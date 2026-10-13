@@ -183,7 +183,7 @@ test("the owner's computers: trust signs a device id onto the channel's list, un
   const list = await r.json();
   assert.deepEqual(list.devices.map((d) => d.id).sort(), [a, b].sort());
   for (const d of list.devices) assert.ok(crypto.verify(null, Buffer.from(`simurgh-trusted-device:${d.id}`), PUB, Buffer.from(d.sig, 'base64')), 'signed by the owner');
-  await assert.rejects(tool('trust', 'not-an-id'), /64 characters/);
+  await assert.rejects(tool('trust', 'not-an-id'), /the id from Simurgh's Settings/);
   // an entry someone else signed never survives the tool's next write
   const other = crypto.generateKeyPairSync('ed25519').privateKey;
   const forged = { id: 'f'.repeat(64), sig: crypto.sign(null, Buffer.from(`simurgh-trusted-device:${'f'.repeat(64)}`), other).toString('base64') };
@@ -196,4 +196,30 @@ test("the owner's computers: trust signs a device id onto the channel's list, un
   await assert.rejects(tool('untrust', b.slice(0, 6)), /12 characters/);
   assert.match(await tool('untrust', b.slice(0, 12)), /1 computer\(s\) left/);
   assert.deepEqual((await (await fetch(listUrl)).json()).devices.map((d) => d.id), [a]);
+});
+
+test("a locked computer tells its id; the owner trusts it by the short id its About shows", async () => {
+  const home = path.join(tmp, 'owner');
+  const tool = (...a) => new Promise((resolve, reject) => execFile(process.execPath, [TOOL, ...a], { env: { ...process.env, SIMURGH_RELEASE_HOME: home } }, (e, o, err) => (e ? reject(new Error(err || o)) : resolve(o))));
+  const post = (body) => fetch(`${base}/api/device`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: typeof body === 'string' ? body : JSON.stringify(body) });
+  const vm = crypto.createHash('sha256').update('svr2025').digest('hex');
+  assert.equal((await post({ id: 'nope' })).status, 400);
+  assert.equal((await post('{not json')).status, 400);
+  assert.equal((await post({ id: vm.toUpperCase() })).status, 200);
+  assert.equal((await fetch(`${base}/admin/devices-seen`)).status, 401, 'the list of seen ids is the owner\'s only');
+  const short = vm.slice(0, 12).toUpperCase().match(/.{4}/g).join('-');
+  await assert.rejects(tool('trust', 'ABCD-ABCD-ABCD'), /has told the server its id yet/);
+  assert.match(await tool('trust', short, 'SVR2025'), /trusted /);
+  const list = await (await fetch(`${base}/u/${CHANNEL}/trusted-devices.json`)).json();
+  const entry = list.devices.find((d) => d.id === vm);
+  assert.ok(entry, 'the full id is on the list');
+  assert.ok(crypto.verify(null, Buffer.from(`simurgh-trusted-device:${vm}`), PUB, Buffer.from(entry.sig, 'base64')));
+  // two seen ids with the same short id: the tool asks for the full one
+  const twin = vm.slice(0, 12) + 'f'.repeat(52);
+  assert.equal((await post({ id: twin })).status, 200);
+  await assert.rejects(tool('trust', short), /2 computers start with/);
+  // a few an hour from one address
+  let last;
+  for (let i = 0; i < 25; i++) last = await post({ id: crypto.randomBytes(32).toString('hex') });
+  assert.equal(last.status, 429);
 });

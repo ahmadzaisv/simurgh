@@ -3,6 +3,8 @@
 //   GET  /api/latest                 the version and size shown on the website
 //   GET  /u/<channel>/<file>         the installed app's updates (latest.yml + installer), and trusted-devices.json - the
 //                                    owner's own computers, each signed with his key (Simurgh's owner device lock)
+//   POST /api/device                 a computer where the owner's own Claude account is locked tells its device id
+//                                    (a hash) - so the owner can trust it by the short id he sees in its About page
 //   /admin/...                       the owner's tool (signed on the owner's PC - see auth.mjs): upload a new version,
 //                                    read the release and how many times each version was downloaded
 //   /u/clip-<random>/<name>.mp4      a clip the owner's Simurgh put here for a few minutes, for Instagram to fetch
@@ -23,6 +25,8 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const MAX_UPLOAD = 700 * 1024 * 1024;
 const CLIP_DIR = /^clip-[A-Za-z0-9_-]{16,}$/; // a clip's folder (its name is the secret part of the link)
 const CLIP_DAY = 24 * 3600 * 1000;
+const SEEN_DAYS = 30; // a locked computer's device id is kept this long for the owner's tool
+const SEEN_MAX = 200;
 
 const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.yml': 'text/yaml; charset=utf-8', '.json': 'application/json', '.mp4': 'video/mp4' };
 
@@ -118,6 +122,31 @@ export function createServer({ dataDir, publicKeyPem, origins = [], siteDir = nu
     }
   }
 
+  /**
+   * A computer where the owner's account is locked says its device id (only Simurgh with the owner's account signed in
+   * sends it; an id is a SHA-256, nothing about the person). Kept a month, newest 200, a few per address an hour.
+   */
+  const seenBy = new Map(); // ip -> { n, since }
+  async function deviceSeen(req, res, ip) {
+    const b = seenBy.get(ip);
+    if (b && now() - b.since < 3600 * 1000 && b.n >= 20) return send(res, 429, { error: 'too many' });
+    seenBy.set(ip, b && now() - b.since < 3600 * 1000 ? { ...b, n: b.n + 1 } : { n: 1, since: now() });
+    let id = '';
+    try {
+      id = String(JSON.parse((await readBody(req, 1024)).toString('utf8')).id || '').toLowerCase();
+    } catch {}
+    if (!/^[0-9a-f]{64}$/.test(id)) return send(res, 400, { error: 'bad id' });
+    const seen = (db().devicesSeen ||= {});
+    seen[id] = new Date(now()).toISOString();
+    const keep = Object.entries(seen)
+      .filter(([, at]) => now() - Date.parse(at) < SEEN_DAYS * 24 * 3600 * 1000)
+      .sort((a, b) => b[1].localeCompare(a[1]))
+      .slice(0, SEEN_MAX);
+    db().devicesSeen = Object.fromEntries(keep);
+    store.saveSoon();
+    return send(res, 200, { ok: true });
+  }
+
   // ---------------------------------------------------------------- the owner's side (signed)
   async function admin(req, res, url) {
     const pathAndQuery = url.pathname + url.search;
@@ -136,6 +165,7 @@ export function createServer({ dataDir, publicKeyPem, origins = [], siteDir = nu
       if (r !== false) return r;
     }
     if (req.method === 'GET' && url.pathname === '/admin/state') return send(res, 200, { release: db().release, downloads: db().downloads });
+    if (req.method === 'GET' && url.pathname === '/admin/devices-seen') return send(res, 200, { devices: Object.entries(db().devicesSeen || {}).map(([id, at]) => ({ id, at })) });
     const up = /^\/admin\/files\/([^/]+)\/([^/]+)$/.exec(url.pathname);
     if (upload && up) {
       const file = store.filePath(up[1], up[2]);
@@ -200,6 +230,7 @@ export function createServer({ dataDir, publicKeyPem, origins = [], siteDir = nu
         return send(res, 200, r ? { version: r.version, size: r.size } : { version: null }, { ...cors, 'cache-control': 'public, max-age=60' });
       }
       if ((url.pathname === '/download' || url.pathname === '/download/Simurgh-Setup.exe') && (req.method === 'GET' || req.method === 'HEAD')) return download(req, res);
+      if (url.pathname === '/api/device' && req.method === 'POST') return await deviceSeen(req, res, clientIp(req));
       // the old one-time links and keys: gone - the page now has a plain download
       if ((url.pathname === '/api/redeem' && req.method === 'POST') || /^\/d\//.test(url.pathname)) return send(res, 410, { error: 'gone', message: 'Download keys are no longer needed: download from https://simurgh.onrender.com' }, cors);
       const u = /^\/u\/([^/]+)\/([^/]+)$/.exec(url.pathname);

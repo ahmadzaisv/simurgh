@@ -7,7 +7,9 @@
 //   node simurgh-release.mjs setup [<repo>]            makes the owner's signing key (once) and writes its public half
 //                                                      to <repo>/server/owner-public.pem
 //   node simurgh-release.mjs trust <device id> [<note>]  one of the owner's own computers: its id (Simurgh's Settings ->
-//                                                      About) is signed with the owner's key and added to
+//                                                      About - the full id, or the short one it shows, e.g.
+//                                                      BC0D-2B31-4129: a computer where the owner's account is locked
+//                                                      tells the server its full id) is signed with the owner's key and added to
 //                                                      trusted-devices.json on the update channel. With the owner's
 //                                                      Claude account, Simurgh unlocks Opus, Fable, Extra high/Max
 //                                                      effort and Ultracode only on these computers.
@@ -144,9 +146,19 @@ async function putList(list) {
   await call('PUT', `/admin/files/${c.channel}/${LIST}`, { file });
 }
 
+/** The full id of a short one (the 12 characters Simurgh's About shows): a locked computer told the server its id. */
+async function fullId(short) {
+  const seen = (await call('GET', '/admin/devices-seen')).devices || [];
+  const hits = [...new Set(seen.map((d) => d.id).filter((x) => x.startsWith(short)))];
+  if (hits.length === 1) return hits[0];
+  if (hits.length > 1) throw new Error(`${hits.length} computers start with ${short} - use the full id (Copy id in its Settings → About)`);
+  throw new Error(`no computer ${short} has told the server its id yet: open Simurgh 0.1.33 or newer there, signed in with your Claude account, and try again in a minute`);
+}
+
 async function trust(id, note) {
-  const clean = String(id || '').trim().toLowerCase().replace(/-/g, '');
-  if (!/^[0-9a-f]{64}$/.test(clean)) throw new Error("trust <device id>: the full id - 64 characters from Simurgh's Settings → About (Copy)");
+  let clean = String(id || '').trim().toLowerCase().replace(/-/g, '');
+  if (/^[0-9a-f]{12,63}$/.test(clean)) clean = await fullId(clean);
+  if (!/^[0-9a-f]{64}$/.test(clean)) throw new Error("trust <device id>: the id from Simurgh's Settings → About (the short one it shows, or the full one - Copy id)");
   const key = fs.readFileSync(PRIVATE, 'utf8');
   const list = cleanList(await serverList());
   const entry = { id: clean, sig: crypto.sign(null, Buffer.from(TRUST_PREFIX + clean), key).toString('base64'), ...(note ? { note: String(note).slice(0, 80) } : {}) };
