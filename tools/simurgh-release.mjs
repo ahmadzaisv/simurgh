@@ -2,7 +2,9 @@
 // new version on the download server.
 //   node simurgh-release.mjs release <dir> <version>   uploads the installer, its blockmap and latest.yml from <dir> to
 //                                                      the update channel and makes it the website's download (the
-//                                                      installed copies see it within 30 minutes)
+//                                                      installed copies see it within 30 minutes). It stops when
+//                                                      What's new is still the release's before (Simurgh's
+//                                                      assets/release-notes.md wasn't written); --same-notes lets it
 //   node simurgh-release.mjs status                    the release on the server and how often each version was downloaded
 //   node simurgh-release.mjs setup [<repo>]            makes the owner's signing key (once) and writes its public half
 //                                                      to <repo>/server/owner-public.pem
@@ -48,6 +50,8 @@ const log = (m) => {
     fs.appendFileSync(LOG, line);
   } catch {}
 };
+// latest.yml's releaseNotes (electron-builder writes it as a YAML block), spaces aside
+const notesIn = (yml) => (/^releaseNotes:([\s\S]*?)(?=^\S|(?![\s\S]))/m.exec(yml)?.[1] || '').replace(/\s+/g, ' ').trim();
 
 function config() {
   return { server: 'https://simurgh-download.onrender.com', ...readJson(CONFIG, {}) };
@@ -95,13 +99,21 @@ async function status() {
   console.log(`downloads from the website: ${d.length ? d.map(([v, n]) => `${v}: ${n}`).join(', ') : 'none yet'}`);
 }
 
-async function release(dir, version) {
+async function release(dir, version, sameNotes = false) {
   if (!dir || !version) throw new Error('release <folder with latest.yml and the installer> <version>');
   const c = config();
   if (!c.channel) throw new Error(`no update channel in ${CONFIG}`);
   const files = ['latest.yml', 'Simurgh-Setup.exe.blockmap', 'Simurgh-Setup.exe'];
   const yml = fs.readFileSync(path.join(dir, 'latest.yml'), 'utf8');
   if (!new RegExp(`^version: ${version.replace(/\./g, '\\.')}$`, 'm').test(yml)) throw new Error(`latest.yml is not version ${version}`);
+  // What's new on the update screen is latest.yml's releaseNotes (Simurgh's assets/release-notes.md): 0.1.41 went out
+  // with 0.1.40's. The update channel's latest.yml is public.
+  const live = await fetch(new URL(`/u/${c.channel}/latest.yml`, c.server), { cache: 'no-store', signal: AbortSignal.timeout(60000) });
+  if (live.ok && !sameNotes) {
+    const was = await live.text();
+    const wasVersion = (/^version: (\S+)$/m.exec(was) || [])[1];
+    if (wasVersion !== version && notesIn(was) && notesIn(was) === notesIn(yml)) throw new Error(`What's new in latest.yml is still ${wasVersion}'s - write Simurgh's assets/release-notes.md for ${version} and build again (or add --same-notes)`);
+  }
   // the installer and its blockmap first, the feed last: an updater never sees a version whose file isn't there
   for (const f of [files[2], files[1], files[0]]) {
     const t0 = Date.now();
@@ -207,13 +219,13 @@ function setup(repo) {
 
 const [cmd, ...args] = process.argv.slice(2);
 try {
-  if (cmd === 'release') await release(args[0], args[1]);
+  if (cmd === 'release') await release(args[0], args[1], args.includes('--same-notes'));
   else if (cmd === 'status') await status();
   else if (cmd === 'setup') setup(args[0]);
   else if (cmd === 'trust') await trust(args[0], args.slice(1).join(' '));
   else if (cmd === 'untrust') await untrust(args[0]);
   else if (cmd === 'devices') await devices(args[0] === '--out' ? args[1] : null);
-  else console.log('simurgh-release.mjs release <dir> <version> | status | setup [<website repo>] | trust <device id> [<note>] | untrust <device id> | devices [--out <file>]');
+  else console.log('simurgh-release.mjs release <dir> <version> [--same-notes] | status | setup [<website repo>] | trust <device id> [<note>] | untrust <device id> | devices [--out <file>]');
 } catch (e) {
   log(`error: ${e.message}`);
   process.exitCode = 1;
