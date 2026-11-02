@@ -223,3 +223,22 @@ test("a locked computer tells its id; the owner trusts it by the short id its Ab
   for (let i = 0; i < 25; i++) last = await post({ id: crypto.randomBytes(32).toString('hex') });
   assert.equal(last.status, 429);
 });
+
+test('a limited computer: its signature says "limited" (it cannot be turned into a full one), and the tool keeps it so', async () => {
+  const home = path.join(tmp, 'owner');
+  const tool = (...a) => new Promise((resolve, reject) => execFile(process.execPath, [TOOL, ...a], { env: { ...process.env, SIMURGH_RELEASE_HOME: home } }, (e, o, err) => (e ? reject(new Error(err || o)) : resolve(o))));
+  const pc = crypto.createHash('sha256').update('friend-pc').digest('hex');
+  assert.match(await tool('trust', pc, 'a laptop', '--limited'), /as limited \(no Fable, Max or Ultracode\) \(a laptop\)/);
+  const list = await (await fetch(`${base}/u/${CHANNEL}/trusted-devices.json`)).json();
+  const e = list.devices.find((d) => d.id === pc);
+  assert.equal(e.level, 'limited');
+  assert.ok(crypto.verify(null, Buffer.from(`simurgh-trusted-device:${pc}:limited`), PUB, Buffer.from(e.sig, 'base64')), 'signed as limited');
+  assert.ok(!crypto.verify(null, Buffer.from(`simurgh-trusted-device:${pc}`), PUB, Buffer.from(e.sig, 'base64')), 'not as a full one (older apps keep it locked)');
+  // someone takes "level" out of the list: the entry no longer checks out, so the tool drops it
+  const tampered = { devices: list.devices.map((d) => (d.id === pc ? { id: d.id, sig: d.sig } : d)) };
+  assert.equal((await adminCall('PUT', `/admin/files/${CHANNEL}/trusted-devices.json`, { buf: Buffer.from(JSON.stringify(tampered)) })).status, 200);
+  assert.ok(!(await tool('devices')).includes(pc));
+  // full again
+  assert.match(await tool('trust', pc, 'a laptop'), /trusted [0-9a-f]+… \(a laptop\)/);
+  assert.match(await tool('devices'), new RegExp(`${pc}  a laptop`));
+});

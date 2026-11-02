@@ -15,6 +15,11 @@
 //                                                      trusted-devices.json on the update channel. With the owner's
 //                                                      Claude account, Simurgh unlocks Opus, Fable, Extra high/Max
 //                                                      effort and Ultracode only on these computers.
+//   node simurgh-release.mjs trust <device id> [<note>] --limited
+//                                                      a computer that is his, but not one of his main ones: Opus and
+//                                                      Extra high work there, Fable, Max effort and Ultracode stay locked
+//                                                      (the signature says "limited", so nobody can turn it into a full
+//                                                      one; Simurgh before 0.1.46 doesn't know it and keeps it locked)
 //   node simurgh-release.mjs untrust <device id>       takes a computer off that list
 //   node simurgh-release.mjs devices [--out <file>]    the list on the server (and a copy in <file>: Simurgh ships one
 //                                                      in electron/agent/trusted-devices.json for offline starts)
@@ -127,6 +132,8 @@ async function release(dir, version, sameNotes = false) {
 
 // ---------------------------------------------------------------- the owner's computers
 const TRUST_PREFIX = 'simurgh-trusted-device:'; // what is signed (Simurgh's electron/agent/ownerlock.js checks the same)
+const LIMITED = ':limited'; // ...for a limited computer: "simurgh-trusted-device:<id>:limited"
+const signed = (id, level) => Buffer.from(TRUST_PREFIX + id + (level === 'limited' ? LIMITED : ''));
 const LIST = 'trusted-devices.json';
 
 async function serverList() {
@@ -145,7 +152,8 @@ function cleanList(list) {
   for (const d of list.devices || []) {
     const id = String(d?.id || '').toLowerCase();
     try {
-      if (/^[0-9a-f]{64}$/.test(id) && crypto.verify(null, Buffer.from(TRUST_PREFIX + id), pub, Buffer.from(String(d.sig), 'base64'))) seen.set(id, { id, sig: d.sig, ...(d.note ? { note: String(d.note) } : {}) });
+      const level = d.level === 'limited' ? 'limited' : 'full';
+      if (/^[0-9a-f]{64}$/.test(id) && crypto.verify(null, signed(id, level), pub, Buffer.from(String(d.sig), 'base64'))) seen.set(id, { id, sig: d.sig, ...(level === 'limited' ? { level } : {}), ...(d.note ? { note: String(d.note) } : {}) });
     } catch {}
   }
   return { v: 1, devices: [...seen.values()] };
@@ -167,16 +175,17 @@ async function fullId(short) {
   throw new Error(`no computer ${short} has told the server its id yet: open Simurgh 0.1.33 or newer there, signed in with your Claude account, and try again in a minute`);
 }
 
-async function trust(id, note) {
+async function trust(id, note, { limited = false } = {}) {
   let clean = String(id || '').trim().toLowerCase().replace(/-/g, '');
   if (/^[0-9a-f]{12,63}$/.test(clean)) clean = await fullId(clean);
   if (!/^[0-9a-f]{64}$/.test(clean)) throw new Error("trust <device id>: the id from Simurgh's Settings → About (the short one it shows, or the full one - Copy id)");
   const key = fs.readFileSync(PRIVATE, 'utf8');
   const list = cleanList(await serverList());
-  const entry = { id: clean, sig: crypto.sign(null, Buffer.from(TRUST_PREFIX + clean), key).toString('base64'), ...(note ? { note: String(note).slice(0, 80) } : {}) };
+  const level = limited ? 'limited' : 'full';
+  const entry = { id: clean, sig: crypto.sign(null, signed(clean, level), key).toString('base64'), ...(limited ? { level } : {}), ...(note ? { note: String(note).slice(0, 80) } : {}) };
   list.devices = [...list.devices.filter((d) => d.id !== clean), entry];
   await putList(list);
-  log(`trusted ${clean.slice(0, 12)}…${note ? ` (${note})` : ''} - ${list.devices.length} computer(s) on the list`);
+  log(`trusted ${clean.slice(0, 12)}…${limited ? ' as limited (no Fable, Max or Ultracode)' : ''}${note ? ` (${note})` : ''} - ${list.devices.length} computer(s) on the list`);
 }
 
 async function untrust(id) {
@@ -193,7 +202,7 @@ async function untrust(id) {
 
 async function devices(out) {
   const list = cleanList(await serverList());
-  for (const d of list.devices) console.log(`${d.id.slice(0, 12).toUpperCase().match(/.{4}/g).join('-')}  ${d.id}${d.note ? `  ${d.note}` : ''}`);
+  for (const d of list.devices) console.log(`${d.id.slice(0, 12).toUpperCase().match(/.{4}/g).join('-')}  ${d.id}${d.level === 'limited' ? '  [limited]' : ''}${d.note ? `  ${d.note}` : ''}`);
   if (!list.devices.length) console.log('no computers on the list yet');
   if (out) {
     writeAtomic(out, `${JSON.stringify(list, null, 2)}\n`);
@@ -222,7 +231,7 @@ try {
   if (cmd === 'release') await release(args[0], args[1], args.includes('--same-notes'));
   else if (cmd === 'status') await status();
   else if (cmd === 'setup') setup(args[0]);
-  else if (cmd === 'trust') await trust(args[0], args.slice(1).join(' '));
+  else if (cmd === 'trust') await trust(args[0], args.slice(1).filter((a) => a !== '--limited').join(' '), { limited: args.includes('--limited') });
   else if (cmd === 'untrust') await untrust(args[0]);
   else if (cmd === 'devices') await devices(args[0] === '--out' ? args[1] : null);
   else console.log('simurgh-release.mjs release <dir> <version> [--same-notes] | status | setup [<website repo>] | trust <device id> [<note>] | untrust <device id> | devices [--out <file>]');
