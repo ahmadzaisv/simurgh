@@ -5,6 +5,8 @@
 //                                                      installed copies see it within 30 minutes). It stops when
 //                                                      What's new is still the release's before (Simurgh's
 //                                                      assets/release-notes.md wasn't written); --same-notes lets it
+//                                                      (a release also uploads latest.yml as pro.yml: see feedAliases)
+//   node simurgh-release.mjs aliases <dir>             only that: <dir>'s latest.yml as pro.yml on the update channel
 //   node simurgh-release.mjs status                    the release on the server and how often each version was downloaded
 //   node simurgh-release.mjs setup [<repo>]            makes the owner's signing key (once) and writes its public half
 //                                                      to <repo>/server/owner-public.pem
@@ -125,9 +127,30 @@ async function release(dir, version, sameNotes = false) {
     await call('PUT', `/admin/files/${c.channel}/${f}`, { file: path.join(dir, f), timeoutMs: 30 * 60 * 1000 });
     log(`uploaded ${f} in ${Math.round((Date.now() - t0) / 1000)} s`);
   }
+  await feedAliases(dir);
   const sha512 = (/sha512: (\S+)/.exec(yml) || [])[1] || '';
   const r = await call('POST', '/admin/release', { json: { channel: c.channel, file: 'Simurgh-Setup.exe', version, sha512 } });
   log(`release ${r.release.version} is the download now (${Math.round(r.release.size / 1048576)} MB)`);
+}
+
+// The owner's own-PC builds (0.1.46-pro.3, 0.1.47-pro.1…) carry "pro" in their version, and electron-updater then reads
+// the channel's pro.yml instead of latest.yml: there was none, so those copies never saw 0.1.47 or 0.1.48 (a 404 every
+// 30 minutes, 2026-11-02). The same feed under that name brings them to each public release. (Simurgh from 0.1.49 also
+// reads latest.yml itself, whatever its version says.)
+const FEED_ALIASES = ['pro.yml'];
+async function feedAliases(dir) {
+  const c = config();
+  const src = path.join(dir, 'latest.yml');
+  for (const name of FEED_ALIASES) {
+    const tmp = path.join(os.tmpdir(), `simurgh-feed-${process.pid}-${name}`);
+    fs.copyFileSync(src, tmp);
+    try {
+      await call('PUT', `/admin/files/${c.channel}/${name}`, { file: tmp });
+      log(`uploaded latest.yml as ${name}`);
+    } finally {
+      fs.rmSync(tmp, { force: true });
+    }
+  }
 }
 
 // ---------------------------------------------------------------- the owner's computers
@@ -229,6 +252,7 @@ function setup(repo) {
 const [cmd, ...args] = process.argv.slice(2);
 try {
   if (cmd === 'release') await release(args[0], args[1], args.includes('--same-notes'));
+  else if (cmd === 'aliases') await feedAliases(args[0]);
   else if (cmd === 'status') await status();
   else if (cmd === 'setup') setup(args[0]);
   else if (cmd === 'trust') await trust(args[0], args.slice(1).filter((a) => a !== '--limited').join(' '), { limited: args.includes('--limited') });
