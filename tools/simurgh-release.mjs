@@ -6,6 +6,9 @@
 //                                                      What's new is still the release's before (Simurgh's
 //                                                      assets/release-notes.md wasn't written); --same-notes lets it
 //                                                      (a release also uploads latest.yml as pro.yml: see feedAliases)
+//   node simurgh-release.mjs release-linux <dir> <version>
+//                                                      uploads the Linux packages and latest-linux*.yml from <dir> (the
+//                                                      packages first, the feeds last). Windows' files stay as they are.
 //   node simurgh-release.mjs aliases <dir>             only that: <dir>'s latest.yml as pro.yml on the update channel
 //   node simurgh-release.mjs status                    the release on the server and how often each version was downloaded
 //   node simurgh-release.mjs setup [<repo>]            makes the owner's signing key (once) and writes its public half
@@ -133,6 +136,36 @@ async function release(dir, version, sameNotes = false) {
   log(`release ${r.release.version} is the download now (${Math.round(r.release.size / 1048576)} MB)`);
 }
 
+const LINUX_PACKAGES = ['Simurgh-amd64.deb', 'Simurgh-x86_64.rpm', 'Simurgh-x86_64.AppImage', 'Simurgh-arm64.deb', 'Simurgh-aarch64.rpm', 'Simurgh-arm64.AppImage'];
+const LINUX_FEEDS = ['latest-linux.yml', 'latest-linux-arm64.yml'];
+async function releaseLinux(dir, version) {
+  if (!dir || !version) throw new Error('release-linux <folder with the packages and latest-linux*.yml> <version>');
+  const c = config();
+  if (!c.channel) throw new Error(`no update channel in ${CONFIG}`);
+  const feeds = LINUX_FEEDS.filter((f) => fs.existsSync(path.join(dir, f)));
+  if (!feeds.length) throw new Error('no latest-linux.yml there');
+  for (const f of feeds) {
+    const yml = fs.readFileSync(path.join(dir, f), 'utf8');
+    if (!new RegExp(`^version: ${version.replace(/\./g, '\\.')}$`, 'm').test(yml)) throw new Error(`${f} is not version ${version}`);
+    // every package a feed names is here, and the right size: an updater never sees one that isn't on the server
+    for (const m of yml.matchAll(/- url: (\S+)\s+sha512: \S+\s+size: (\d+)/g)) {
+      const st = fs.statSync(path.join(dir, m[1]));
+      if (st.size !== Number(m[2])) throw new Error(`${m[1]} is ${st.size} bytes, ${f} says ${m[2]}`);
+    }
+  }
+  for (const f of LINUX_PACKAGES) {
+    if (!fs.existsSync(path.join(dir, f))) continue;
+    const t0 = Date.now();
+    await call('PUT', `/admin/files/${c.channel}/${f}`, { file: path.join(dir, f), timeoutMs: 40 * 60 * 1000 });
+    log(`uploaded ${f} in ${Math.round((Date.now() - t0) / 1000)} s`);
+  }
+  for (const f of feeds) {
+    await call('PUT', `/admin/files/${c.channel}/${f}`, { file: path.join(dir, f) });
+    log(`uploaded ${f}`);
+  }
+  log(`Linux ${version} is on the update channel`);
+}
+
 // The owner's own-PC builds (0.1.46-pro.3, 0.1.47-pro.1…) carry "pro" in their version, and electron-updater then reads
 // the channel's pro.yml instead of latest.yml: there was none, so those copies never saw 0.1.47 or 0.1.48 (a 404 every
 // 30 minutes, 2026-11-02). The same feed under that name brings them to each public release. (Simurgh from 0.1.49 also
@@ -252,6 +285,7 @@ function setup(repo) {
 const [cmd, ...args] = process.argv.slice(2);
 try {
   if (cmd === 'release') await release(args[0], args[1], args.includes('--same-notes'));
+  else if (cmd === 'release-linux') await releaseLinux(args[0], args[1]);
   else if (cmd === 'aliases') await feedAliases(args[0]);
   else if (cmd === 'status') await status();
   else if (cmd === 'setup') setup(args[0]);

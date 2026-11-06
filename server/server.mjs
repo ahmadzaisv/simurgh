@@ -1,5 +1,6 @@
 // Simurgh's download server (Render web service "simurgh-download", disk at DATA_DIR):
 //   GET  /download                   the installer of the newest version - free, no key (resumable)
+//   GET  /download/linux/<file>      a Linux package of it (.deb, .rpm, AppImage; x64 and ARM64)
 //   GET  /api/latest                 the version and size shown on the website
 //   GET  /u/<channel>/<file>         the installed app's updates (latest.yml + installer), and trusted-devices.json - the
 //                                    owner's own computers, each signed with his key (Simurgh's owner device lock)
@@ -104,6 +105,21 @@ export function createServer({ dataDir, publicKeyPem, origins = [], siteDir = nu
       store.saveSoon();
     }
     sendFile(req, res, file, { name: 'Simurgh-Setup.exe', type: 'application/vnd.microsoft.portable-executable', extra: { 'cache-control': 'no-store' } });
+  }
+
+  /** A Linux package of the newest version: from the same channel, counted with the version as "<version> linux". */
+  const LINUX_FILES = new Set(['Simurgh-amd64.deb', 'Simurgh-arm64.deb', 'Simurgh-x86_64.rpm', 'Simurgh-aarch64.rpm', 'Simurgh-x86_64.AppImage', 'Simurgh-arm64.AppImage']);
+  function downloadLinux(req, res, name) {
+    const rel = db().release;
+    const file = rel && LINUX_FILES.has(name) && store.filePath(rel.channel, name);
+    if (!file || !fs.existsSync(file)) return send(res, 404, 'There is no such Linux package yet.\n');
+    const fromStart = !req.headers.range || /^bytes=0-/.test(String(req.headers.range));
+    if (req.method === 'GET' && fromStart) {
+      const key = `${rel.version} linux`;
+      db().downloads[key] = (db().downloads[key] || 0) + 1;
+      store.saveSoon();
+    }
+    sendFile(req, res, file, { name, type: 'application/octet-stream', extra: { 'cache-control': 'no-store' } });
   }
 
   /** Clip folders left over for more than a day (Simurgh stopped before it deleted one): gone. */
@@ -230,6 +246,8 @@ export function createServer({ dataDir, publicKeyPem, origins = [], siteDir = nu
         return send(res, 200, r ? { version: r.version, size: r.size } : { version: null }, { ...cors, 'cache-control': 'public, max-age=60' });
       }
       if ((url.pathname === '/download' || url.pathname === '/download/Simurgh-Setup.exe') && (req.method === 'GET' || req.method === 'HEAD')) return download(req, res);
+      const lin = /^\/download\/linux\/([^/]+)$/.exec(url.pathname);
+      if (lin && (req.method === 'GET' || req.method === 'HEAD')) return downloadLinux(req, res, lin[1]);
       if (url.pathname === '/api/device' && req.method === 'POST') return await deviceSeen(req, res, clientIp(req));
       // the old one-time links and keys: gone - the page now has a plain download
       if ((url.pathname === '/api/redeem' && req.method === 'POST') || /^\/d\//.test(url.pathname)) return send(res, 410, { error: 'gone', message: 'Download keys are no longer needed: download from https://simurgh.onrender.com' }, cors);

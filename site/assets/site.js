@@ -6,6 +6,7 @@
   const API = local ? location.origin : (document.querySelector('meta[name="simurgh-api"]')?.content || '').replace(/\/$/, '');
   if (!API) return;
   for (const a of document.querySelectorAll('[data-download]')) a.href = `${API}/download`;
+  for (const a of document.querySelectorAll('[data-linux]')) a.href = `${API}/download/linux/${a.dataset.linux}`;
   const word = { en: 'Version', ps: 'نسخه', fa: 'نسخه' }[lang] || 'Version';
 
   // the version and size next to the title (the version stays in Latin digits: ۰ looks like the dots between them)

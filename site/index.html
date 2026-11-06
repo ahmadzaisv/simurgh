@@ -44,6 +44,23 @@
             <p class="dlnote">Free · Simurgh-Setup.exe · it updates itself after that</p>
           </div>
           <p class="fine">If Windows says <b>“Windows protected your PC”</b>, click <b>More info</b>, then <b>Run anyway</b>.</p>
+          <div class="linux" id="linux">
+            <h2><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3a4 4 0 0 0-4 4c0 1.2.1 2.3-.5 3.5C6.6 12.200 5 14 5 16.500c0 .9.2 1.700.6 2.400-.4.300-.6.700-.6 1.100 0 .600.500 1 1.300 1h2.400c.500 0 1-.200 1.300-.600.600.100 1.300.200 2 .200s1.400-.100 2-.200c.300.400.800.600 1.300.600h2.400c.800 0 1.300-.400 1.300-1 0-.400-.200-.800-.600-1.100.400-.700.600-1.500.600-2.400 0-2.500-1.600-4.300-2.500-6-.600-1.200-.500-2.300-.500-3.500a4 4 0 0 0-4-4z"/></svg><span>On Linux or a Chromebook</span></h2>
+            <p class="fine">Kali, Debian, Ubuntu, Mint and a Chromebook’s Linux: the <b>.deb</b>. Fedora and openSUSE: the <b>.rpm</b>. Any other Linux: the <b>AppImage</b>.</p>
+            <p class="linux-links">
+              <a class="dlalt" data-linux="Simurgh-amd64.deb" href="https://simurgh-download.onrender.com/download/linux/Simurgh-amd64.deb">.deb (64-bit)</a>
+              <a class="dlalt" data-linux="Simurgh-x86_64.rpm" href="https://simurgh-download.onrender.com/download/linux/Simurgh-x86_64.rpm">.rpm (64-bit)</a>
+              <a class="dlalt" data-linux="Simurgh-x86_64.AppImage" href="https://simurgh-download.onrender.com/download/linux/Simurgh-x86_64.AppImage">AppImage (64-bit)</a>
+            </p>
+            <p class="linux-links">
+              <span class="fine">ARM (many Chromebooks):</span>
+              <a class="dlalt" data-linux="Simurgh-arm64.deb" href="https://simurgh-download.onrender.com/download/linux/Simurgh-arm64.deb">.deb</a>
+              <a class="dlalt" data-linux="Simurgh-aarch64.rpm" href="https://simurgh-download.onrender.com/download/linux/Simurgh-aarch64.rpm">.rpm</a>
+              <a class="dlalt" data-linux="Simurgh-arm64.AppImage" href="https://simurgh-download.onrender.com/download/linux/Simurgh-arm64.AppImage">AppImage</a>
+            </p>
+            <p class="fine">If the AppImage doesn't open, your system has no FUSE: run it from a terminal with <code dir="ltr">--appimage-extract-and-run</code>.</p>
+            <p class="fine"><b>Chromebook:</b> turn on Linux in Settings → About ChromeOS → Developers, open the .deb in the Files app and choose <b>Install with Linux</b>. Simurgh then works with Linux apps and the folders you share with Linux; Chrome and Android apps stay out of its reach.</p>
+          </div>
         </div>
         <figure>
           <img class="frame" src="assets/shots/notepad.png" width="1920" height="1200" alt="Simurgh's Notepad: a 3D gold title, Pashto and Dari lines reading from the right, English from the left, and stylish letters.">

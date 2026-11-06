@@ -56,6 +56,14 @@ header.top .wrap { display: flex; align-items: center; gap: 24px; min-height: 62
 .dlbtn svg { width: 22px; height: 22px; flex: none; }
 .dlnote { margin: 10px 0 0; font-size: 14px; color: var(--muted); }
 .fine { font-size: 14px; color: var(--muted); margin-bottom: 8px; max-width: 520px; }
+.linux { margin-top: 26px; padding-top: 18px; border-top: 1px solid rgba(127, 127, 127, 0.25); max-width: 560px; }
+.linux h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-size: 18px; }
+.linux h2 svg { width: 20px; height: 20px; flex: none; }
+.linux-links { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 10px; }
+.linux-links .fine { margin: 0; }
+.dlalt { display: inline-block; padding: 7px 12px; border: 1px solid rgba(127, 127, 127, 0.4); border-radius: 8px; font-size: 14px; text-decoration: none; color: inherit; }
+.dlalt:hover { border-color: var(--gold); }
+.dlalt:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 .frame { border-radius: 10px; overflow: hidden; border: 1px solid #c9c1ae; box-shadow: 0 12px 34px rgba(30, 36, 51, 0.18); background: #0a0e17; }
 figure { margin: 0; }
 

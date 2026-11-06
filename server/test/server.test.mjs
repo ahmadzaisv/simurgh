@@ -242,3 +242,16 @@ test('a limited computer: its signature says "limited" (it cannot be turned into
   assert.match(await tool('trust', pc, 'a laptop'), /trusted [0-9a-f]+… \(a laptop\)/);
   assert.match(await tool('devices'), new RegExp(`${pc}  a laptop`));
 });
+
+test('the Linux packages of the release: by their own names only, counted apart', async () => {
+  assert.equal((await fetch(`${base}/download/linux/Simurgh-amd64.deb`)).status, 404, 'not uploaded yet');
+  const deb = crypto.randomBytes(2048);
+  assert.equal((await adminCall('PUT', `/admin/files/${CHANNEL}/Simurgh-amd64.deb`, { buf: deb })).status, 200);
+  const r = await fetch(`${base}/download/linux/Simurgh-amd64.deb`);
+  assert.equal(r.status, 200);
+  assert.ok(Buffer.from(await r.arrayBuffer()).equals(deb));
+  assert.equal((await fetch(`${base}/download/linux/latest.yml`)).status, 404, 'only the packages');
+  assert.equal((await fetch(`${base}/download/linux/..%2f..%2fdb.json`)).status, 404);
+  const s = await (await adminCall('GET', '/admin/state')).json();
+  assert.ok(Object.keys(s.downloads).some((k) => / linux$/.test(k)), JSON.stringify(s.downloads));
+});
