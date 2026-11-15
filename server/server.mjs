@@ -2,12 +2,17 @@
 //   GET  /download                   the installer of the newest version - free, no key (resumable)
 //   GET  /download/linux/<file>      a Linux package of it (.deb, .rpm, AppImage; x64 and ARM64)
 //   GET  /api/latest                 the version and size shown on the website
+//   GET  /ios/source.json            Simurgh for iPhone as a SideStore / AltStore source (they install it signed with
+//                                    the user's own free Apple ID, and show each new version as an update)
+//   GET  /download/ios[/<file>]      the iPhone app itself (.ipa): the newest, or one of the last few by name
+//   GET  /api/ios/latest             the iPhone app's newest version (the website and the app's own update notice)
 //   GET  /u/<channel>/<file>         the installed app's updates (latest.yml + installer), and trusted-devices.json - the
 //                                    owner's own computers, each signed with his key (Simurgh's owner device lock)
 //   POST /api/device                 a computer where the owner's own Claude account is locked tells its device id
 //                                    (a hash) - so the owner can trust it by the short id he sees in its About page
 //   /admin/...                       the owner's tool (signed on the owner's PC - see auth.mjs): upload a new version,
-//                                    read the release and how many times each version was downloaded
+//                                    read the release and how many times each version was downloaded; the iPhone
+//                                    app's release (POST /admin/ios-release, after its .ipa is uploaded)
 //   /u/clip-<random>/<name>.mp4      a clip the owner's Simurgh put here for a few minutes, for Instagram to fetch
 //                                    (Instagram login takes a video only by a public link); Simurgh deletes it once
 //                                    Instagram has it, and any left after a day go when the next one comes
@@ -28,8 +33,10 @@ const CLIP_DIR = /^clip-[A-Za-z0-9_-]{16,}$/; // a clip's folder (its name is th
 const CLIP_DAY = 24 * 3600 * 1000;
 const SEEN_DAYS = 30; // a locked computer's device id is kept this long for the owner's tool
 const SEEN_MAX = 200;
+const IPA_NAME = /^Simurgh-\d+\.\d+\.\d+(-[0-9A-Za-z.]+)?\.ipa$/;
+const IOS_KEEP = 3; // the iPhone versions kept on the disk and listed in the source (older .ipa files are deleted)
 
-const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.yml': 'text/yaml; charset=utf-8', '.json': 'application/json', '.mp4': 'video/mp4' };
+const TYPES = { '.ipa': 'application/octet-stream', '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.yml': 'text/yaml; charset=utf-8', '.json': 'application/json', '.mp4': 'video/mp4' };
 
 export function createServer({ dataDir, publicKeyPem, origins = [], siteDir = null, now = () => Date.now(), log = console.log } = {}) {
   const store = new Store(dataDir);
@@ -122,6 +129,123 @@ export function createServer({ dataDir, publicKeyPem, origins = [], siteDir = nu
     sendFile(req, res, file, { name, type: 'application/octet-stream', extra: { 'cache-control': 'no-store' } });
   }
 
+  // ---------------------------------------------------------------- Simurgh for iPhone
+  // Apple lets an iPhone app come from a website only in the EU, Japan and Brazil, and the App Store asks a yearly fee
+  // and its review. So the iPhone app is offered the free way: SideStore or AltStore on the user's iPhone signs the
+  // .ipa with the user's own free Apple ID and installs it, and this source tells them about each new version.
+  const ios = () => db().ios || null;
+  const iosVersions = (r) => (r ? [r, ...(r.history || [])] : []);
+  const selfBase = (req) => {
+    const host = String(req.headers.host || '');
+    const local = /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host);
+    return `${local ? 'http' : String(req.headers['x-forwarded-proto'] || 'https').split(',')[0]}://${host}`;
+  };
+  const siteBase = (req) => (siteDir ? selfBase(req) : origins[0] || selfBase(req));
+  const ipaUrl = (req, file) => `${selfBase(req)}/download/ios/${file}`;
+
+  /** The source SideStore and AltStore read (their format: https://faq.altstore.io/developers/make-a-source). */
+  function iosSource(req) {
+    const r = ios();
+    const site = siteBase(req);
+    const icon = `${site}/assets/ios-icon.png`;
+    const about =
+      'Simurgh is your own AI assistant on your iPhone, with your own Claude plan: it chats in English and Pashto, ' +
+      'reads its answers aloud, browses the web with your saved passwords, runs a shell on your own server and can ' +
+      'work your iPhone for you. It makes its own free server on Google Cloud from the iPhone, with no computer.\n\n' +
+      'سیمرغ ستاسو خپل هوښیار مرستیال دی، چې ستاسو په ایفون کې ستاسو د Claude له پلان سره کار کوي.';
+    const app = {
+      name: 'Simurgh',
+      bundleIdentifier: r?.bundleID || 'com.bilal.Simurgh',
+      developerName: 'Simurgh',
+      subtitle: 'Your own AI assistant, with your Claude plan',
+      localizedDescription: about,
+      iconURL: icon,
+      tintColor: '#4f7fff',
+      category: 'productivity',
+      screenshots: [],
+      versions: iosVersions(r).map((v) => ({
+        version: v.version,
+        buildVersion: String(v.build),
+        date: v.at,
+        localizedDescription: v.notes || `Simurgh ${v.version}`,
+        downloadURL: ipaUrl(req, v.file),
+        size: v.size,
+        ...(v.sha256 ? { sha256: v.sha256 } : {}),
+        minOSVersion: v.minOS || '18.0',
+      })),
+      appPermissions: { entitlements: r?.entitlements || [], privacy: r?.privacy || {} },
+    };
+    // the fields older SideStore and AltStore builds read
+    if (r) Object.assign(app, { version: r.version, versionDate: r.at, versionDescription: r.notes || '', downloadURL: ipaUrl(req, r.file), size: r.size });
+    return {
+      name: 'Simurgh',
+      identifier: 'com.onrender.simurgh',
+      subtitle: 'Simurgh for iPhone',
+      description: about,
+      iconURL: icon,
+      website: site,
+      tintColor: '#4f7fff',
+      featuredApps: [app.bundleIdentifier],
+      apps: r ? [app] : [],
+      news: [],
+    };
+  }
+
+  /** The iPhone app: the newest (/download/ios) or one of the versions the source lists, counted as "<version> ios". */
+  function downloadIos(req, res, name) {
+    const r = ios();
+    const v = name ? iosVersions(r).find((x) => x.file === name) : r;
+    const file = v && store.filePath(r.channel, v.file);
+    if (!file || !fs.existsSync(file)) return send(res, 404, 'There is no such iPhone version (yet).\n');
+    const fromStart = !req.headers.range || /^bytes=0-/.test(String(req.headers.range));
+    if (req.method === 'GET' && fromStart) {
+      const key = `${v.version} ios`;
+      db().downloads[key] = (db().downloads[key] || 0) + 1;
+      store.saveSoon();
+    }
+    sendFile(req, res, file, { name: v.file, type: 'application/octet-stream', extra: { 'cache-control': 'no-store' } });
+  }
+
+  /** The owner's tool made a new iPhone version the current one (its .ipa is already uploaded to the channel). */
+  function iosRelease(body) {
+    const file = store.filePath(body.channel, body.file);
+    if (!file || !IPA_NAME.test(String(body.file)) || !fs.existsSync(file)) return { status: 400, error: 'upload the .ipa first' };
+    if (!/^\d+\.\d+\.\d+/.test(String(body.version || '')) || !/^\d+$/.test(String(body.build || ''))) return { status: 400, error: 'a version (1.2.3) and a build number' };
+    const was = ios();
+    const entry = {
+      version: String(body.version),
+      build: Number(body.build),
+      file: body.file,
+      size: fs.statSync(file).size,
+      sha256: /^[0-9a-f]{64}$/.test(String(body.sha256 || '')) ? body.sha256 : '',
+      notes: String(body.notes || '').slice(0, 4000),
+      notesPs: String(body.notesPs || '').slice(0, 4000),
+      minOS: /^\d+(\.\d+){0,2}$/.test(String(body.minOS || '')) ? String(body.minOS) : '18.0',
+      at: new Date(now()).toISOString(),
+    };
+    if (was && was.build >= entry.build && was.file !== entry.file) return { status: 409, error: `build ${entry.build} is not newer than the current ${was.build} (${was.version})` };
+    // the versions before it (the same file again replaces itself); the oldest beyond IOS_KEEP leave the disk
+    const strip = ({ history, channel, bundleID, privacy, entitlements, ...v }) => v;
+    const older = iosVersions(was).map(strip).filter((v) => v.file !== entry.file);
+    for (const v of older.slice(IOS_KEEP - 1)) {
+      const f = store.filePath(was.channel, v.file);
+      if (f) fs.rmSync(f, { force: true });
+    }
+    const privacy = {};
+    for (const [k, t] of Object.entries(body.privacy || {})) if (/^NS[A-Za-z]+UsageDescription$/.test(k)) privacy[k] = String(t).slice(0, 500);
+    db().ios = {
+      ...entry,
+      channel: body.channel,
+      bundleID: /^[A-Za-z0-9.-]{3,155}$/.test(String(body.bundleID || '')) ? body.bundleID : 'com.bilal.Simurgh',
+      privacy,
+      entitlements: Array.isArray(body.entitlements) ? body.entitlements.map(String).filter((e) => /^[A-Za-z0-9._-]{3,120}$/.test(e)) : [],
+      history: older.slice(0, IOS_KEEP - 1),
+    };
+    store.save();
+    log(`iPhone release ${entry.version} (${entry.build})`);
+    return { status: 200, ios: db().ios };
+  }
+
   /** Clip folders left over for more than a day (Simurgh stopped before it deleted one): gone. */
   function clearOldClips(keep) {
     const dir = path.join(dataDir, 'files');
@@ -180,7 +304,7 @@ export function createServer({ dataDir, publicKeyPem, origins = [], siteDir = nu
       const r = voice.admin(req, res, url, body, { send, sendFile });
       if (r !== false) return r;
     }
-    if (req.method === 'GET' && url.pathname === '/admin/state') return send(res, 200, { release: db().release, downloads: db().downloads });
+    if (req.method === 'GET' && url.pathname === '/admin/state') return send(res, 200, { release: db().release, ios: ios(), downloads: db().downloads });
     if (req.method === 'GET' && url.pathname === '/admin/devices-seen') return send(res, 200, { devices: Object.entries(db().devicesSeen || {}).map(([id, at]) => ({ id, at })) });
     const up = /^\/admin\/files\/([^/]+)\/([^/]+)$/.exec(url.pathname);
     if (upload && up) {
@@ -220,6 +344,10 @@ export function createServer({ dataDir, publicKeyPem, origins = [], siteDir = nu
       log(`deleted ${up[1].slice(0, 4)}…/${up[2]}`);
       return send(res, 200, { ok: true });
     }
+    if (req.method === 'POST' && url.pathname === '/admin/ios-release') {
+      const r = iosRelease(body);
+      return send(res, r.status, r.error ? { error: r.error } : { ios: r.ios });
+    }
     if (req.method === 'POST' && url.pathname === '/admin/release') {
       const file = store.filePath(body.channel, body.file);
       if (!file || !fs.existsSync(file) || !body.version) return send(res, 400, { error: 'upload the files first' });
@@ -246,6 +374,14 @@ export function createServer({ dataDir, publicKeyPem, origins = [], siteDir = nu
         return send(res, 200, r ? { version: r.version, size: r.size } : { version: null }, { ...cors, 'cache-control': 'public, max-age=60' });
       }
       if ((url.pathname === '/download' || url.pathname === '/download/Simurgh-Setup.exe') && (req.method === 'GET' || req.method === 'HEAD')) return download(req, res);
+      if (url.pathname === '/ios/source.json' && (req.method === 'GET' || req.method === 'HEAD')) return send(res, 200, iosSource(req), { 'access-control-allow-origin': '*', 'cache-control': 'public, max-age=300' });
+      if (url.pathname === '/api/ios/latest' && req.method === 'GET') {
+        const r = ios();
+        const body = r ? { version: r.version, build: r.build, size: r.size, minOS: r.minOS, notes: r.notes, notesPs: r.notesPs, at: r.at, ipa: ipaUrl(req, r.file), source: `${selfBase(req)}/ios/source.json`, page: `${siteBase(req)}/#iphone` } : { version: null };
+        return send(res, 200, body, { ...cors, 'cache-control': 'public, max-age=300' });
+      }
+      const ipa = /^\/download\/ios(?:\/([^/]+))?$/.exec(url.pathname);
+      if (ipa && (req.method === 'GET' || req.method === 'HEAD')) return downloadIos(req, res, ipa[1] ? decodeURIComponent(ipa[1]) : null);
       const lin = /^\/download\/linux\/([^/]+)$/.exec(url.pathname);
       if (lin && (req.method === 'GET' || req.method === 'HEAD')) return downloadLinux(req, res, lin[1]);
       if (url.pathname === '/api/device' && req.method === 'POST') return await deviceSeen(req, res, clientIp(req));

@@ -9,6 +9,13 @@
 //   node simurgh-release.mjs release-linux <dir> <version>
 //                                                      uploads the Linux packages and latest-linux*.yml from <dir> (the
 //                                                      packages first, the feeds last). Windows' files stay as they are.
+//   node simurgh-release.mjs release-ios <Simurgh-x.y.z.ipa> [--same-notes]
+//                                                      Simurgh for iPhone: uploads the .ipa (made by simurgh-ios'
+//                                                      tools/ipa.sh, with its .json beside it - the version, build,
+//                                                      permissions and What's new) and makes it the version the
+//                                                      website, the SideStore/AltStore source and the app's own update
+//                                                      notice offer. It stops when What's new is still the last
+//                                                      version's (--same-notes lets it).
 //   node simurgh-release.mjs aliases <dir>             only that: <dir>'s latest.yml as pro.yml on the update channel
 //   node simurgh-release.mjs status                    the release on the server and how often each version was downloaded
 //   node simurgh-release.mjs setup [<repo>]            makes the owner's signing key (once) and writes its public half
@@ -105,6 +112,8 @@ async function status() {
   const s = await call('GET', '/admin/state');
   const r = s.release;
   console.log(`release: ${r ? `${r.version} (${Math.round(r.size / 1048576)} MB, ${r.at})` : 'none yet'}`);
+  const i = s.ios;
+  console.log(`iPhone: ${i ? `${i.version} build ${i.build} (${Math.round(i.size / 1048576)} MB, ${i.at})` : 'none yet'}`);
   const d = Object.entries(s.downloads || {}).sort((a, b) => b[0].localeCompare(a[0], undefined, { numeric: true }));
   console.log(`downloads from the website: ${d.length ? d.map(([v, n]) => `${v}: ${n}`).join(', ') : 'none yet'}`);
 }
@@ -164,6 +173,31 @@ async function releaseLinux(dir, version) {
     log(`uploaded ${f}`);
   }
   log(`Linux ${version} is on the update channel`);
+}
+
+async function releaseIos(ipa, sameNotes = false) {
+  if (!ipa || !fs.existsSync(ipa)) throw new Error('release-ios <Simurgh-x.y.z.ipa> (made by simurgh-ios: bash tools/ipa.sh)');
+  const c = config();
+  if (!c.channel) throw new Error(`no update channel in ${CONFIG}`);
+  const file = path.basename(ipa);
+  const metaFile = ipa.replace(/\.ipa$/, '.json');
+  if (!fs.existsSync(metaFile)) throw new Error(`no ${path.basename(metaFile)} beside it (tools/ipa.sh writes it)`);
+  const meta = JSON.parse(fs.readFileSync(metaFile, 'utf8'));
+  if (file !== `Simurgh-${meta.version}.ipa`) throw new Error(`${file} is not Simurgh-${meta.version}.ipa`);
+  const size = fs.statSync(ipa).size;
+  const sha = await new Promise((resolve, reject) => {
+    const h = crypto.createHash('sha256');
+    fs.createReadStream(ipa).on('data', (d) => h.update(d)).on('end', () => resolve(h.digest('hex'))).on('error', reject);
+  });
+  if (meta.size !== size || meta.sha256 !== sha) throw new Error(`${file} is not the one ${path.basename(metaFile)} describes (built again since?)`);
+  if (!String(meta.notes || '').trim()) throw new Error(`no What's new in ${path.basename(metaFile)} (simurgh-ios: release-notes.md)`);
+  const live = await fetch(new URL('/api/ios/latest', c.server), { cache: 'no-store', signal: AbortSignal.timeout(60000) }).then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
+  if (live.version && live.version !== meta.version && !sameNotes && String(live.notes || '').trim() === String(meta.notes).trim()) throw new Error(`What's new is still ${live.version}'s - write simurgh-ios' release-notes.md for ${meta.version} and run tools/ipa.sh again (or add --same-notes)`);
+  const t0 = Date.now();
+  await call('PUT', `/admin/files/${c.channel}/${file}`, { file: ipa, timeoutMs: 30 * 60 * 1000 });
+  log(`uploaded ${file} in ${Math.round((Date.now() - t0) / 1000)} s`);
+  const r = await call('POST', '/admin/ios-release', { json: { channel: c.channel, file, version: meta.version, build: meta.build, bundleID: meta.bundleID, minOS: meta.minOS, sha256: sha, notes: meta.notes, notesPs: meta.notesPs || '', privacy: meta.privacy || {}, entitlements: meta.entitlements || [] } });
+  log(`iPhone ${r.ios.version} (build ${r.ios.build}) is the download now (${Math.round(r.ios.size / 1048576)} MB) - in the source: ${new URL('/ios/source.json', c.server)}`);
 }
 
 // The owner's own-PC builds (0.1.46-pro.3, 0.1.47-pro.1…) carry "pro" in their version, and electron-updater then reads
@@ -286,13 +320,14 @@ const [cmd, ...args] = process.argv.slice(2);
 try {
   if (cmd === 'release') await release(args[0], args[1], args.includes('--same-notes'));
   else if (cmd === 'release-linux') await releaseLinux(args[0], args[1]);
+  else if (cmd === 'release-ios') await releaseIos(args[0], args.includes('--same-notes'));
   else if (cmd === 'aliases') await feedAliases(args[0]);
   else if (cmd === 'status') await status();
   else if (cmd === 'setup') setup(args[0]);
   else if (cmd === 'trust') await trust(args[0], args.slice(1).filter((a) => a !== '--limited').join(' '), { limited: args.includes('--limited') });
   else if (cmd === 'untrust') await untrust(args[0]);
   else if (cmd === 'devices') await devices(args[0] === '--out' ? args[1] : null);
-  else console.log('simurgh-release.mjs release <dir> <version> [--same-notes] | status | setup [<website repo>] | trust <device id> [<note>] | untrust <device id> | devices [--out <file>]');
+  else console.log('simurgh-release.mjs release <dir> <version> [--same-notes] | release-linux <dir> <version> | release-ios <ipa> [--same-notes] | status | setup [<website repo>] | trust <device id> [<note>] | untrust <device id> | devices [--out <file>]');
 } catch (e) {
   log(`error: ${e.message}`);
   process.exitCode = 1;

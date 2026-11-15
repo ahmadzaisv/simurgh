@@ -255,3 +255,64 @@ test('the Linux packages of the release: by their own names only, counted apart'
   const s = await (await adminCall('GET', '/admin/state')).json();
   assert.ok(Object.keys(s.downloads).some((k) => / linux$/.test(k)), JSON.stringify(s.downloads));
 });
+
+test('Simurgh for iPhone: the tool releases an .ipa; the SideStore/AltStore source, the download and the update notice offer it', async () => {
+  const home = path.join(tmp, 'owner-ios');
+  fs.mkdirSync(home, { recursive: true });
+  fs.writeFileSync(path.join(home, 'owner-private.pem'), PRIV);
+  fs.writeFileSync(path.join(home, 'config.json'), JSON.stringify({ server: base, channel: CHANNEL }));
+  const tool = (...a) => new Promise((resolve, reject) => execFile(process.execPath, [TOOL, ...a], { env: { ...process.env, SIMURGH_RELEASE_HOME: home } }, (e, o, err) => (e ? reject(new Error(err || o)) : resolve(o))));
+  const empty = await (await fetch(`${base}/ios/source.json`)).json();
+  assert.deepEqual(empty.apps, [], 'no version yet: a source with no apps');
+  assert.equal((await fetch(`${base}/download/ios`)).status, 404);
+  assert.deepEqual(await (await fetch(`${base}/api/ios/latest`)).json(), { version: null });
+  const dir = path.join(tmp, 'ios');
+  fs.mkdirSync(dir, { recursive: true });
+  const make = (version, build, notes) => {
+    const ipa = crypto.randomBytes(300 * 1024 + build);
+    const f = path.join(dir, `Simurgh-${version}.ipa`);
+    fs.writeFileSync(f, ipa);
+    const meta = { version, build, bundleID: 'com.bilal.Simurgh', minOS: '18.0', size: ipa.length, sha256: crypto.createHash('sha256').update(ipa).digest('hex'), notes, notesPs: 'نوې خبرې', privacy: { NSCameraUsageDescription: 'کمره', Bad: 'x' }, entitlements: [] };
+    fs.writeFileSync(f.replace(/\.ipa$/, '.json'), JSON.stringify(meta));
+    return { f, ipa, meta };
+  };
+  const a = make('0.2.0', 2, 'First public version');
+  assert.match(await tool('release-ios', a.f), /iPhone 0\.2\.0 \(build 2\) is the download now/);
+  const src = await (await fetch(`${base}/ios/source.json`)).json();
+  assert.equal(src.apps.length, 1);
+  const app = src.apps[0];
+  assert.equal(app.bundleIdentifier, 'com.bilal.Simurgh');
+  assert.deepEqual(app.appPermissions, { entitlements: [], privacy: { NSCameraUsageDescription: 'کمره' } }, 'only real usage keys');
+  assert.equal(app.versions.length, 1);
+  assert.equal(app.versions[0].buildVersion, '2');
+  assert.equal(app.versions[0].size, a.ipa.length);
+  assert.equal(app.versions[0].downloadURL, `${base}/download/ios/Simurgh-0.2.0.ipa`);
+  assert.equal(app.downloadURL, app.versions[0].downloadURL, 'the older fields too');
+  assert.ok(Buffer.from(await (await fetch(app.versions[0].downloadURL)).arrayBuffer()).equals(a.ipa));
+  assert.ok(Buffer.from(await (await fetch(`${base}/download/ios`)).arrayBuffer()).equals(a.ipa), 'the newest without a name');
+  const latest = await (await fetch(`${base}/api/ios/latest`)).json();
+  assert.equal(latest.build, 2);
+  assert.equal(latest.source, `${base}/ios/source.json`);
+  // the same notes again for a new version: stopped; a build that isn't newer: refused
+  const b = make('0.2.1', 3, 'First public version');
+  await assert.rejects(tool('release-ios', b.f), /still 0\.2\.0's/);
+  const old = make('0.1.9', 1, 'Older');
+  await assert.rejects(tool('release-ios', old.f), /not newer/);
+  // three newer versions: the source keeps the last three, the oldest .ipa leaves the disk
+  const c = make('0.2.1', 3, 'Second');
+  await tool('release-ios', c.f);
+  const d = make('0.2.2', 4, 'Third');
+  await tool('release-ios', d.f);
+  const e = make('0.3.0', 5, 'Fourth');
+  await tool('release-ios', e.f);
+  const vs = (await (await fetch(`${base}/ios/source.json`)).json()).apps[0].versions.map((v) => v.version);
+  assert.deepEqual(vs, ['0.3.0', '0.2.2', '0.2.1']);
+  assert.equal((await fetch(`${base}/download/ios/Simurgh-0.2.0.ipa`)).status, 404, 'the oldest is gone');
+  assert.equal((await fetch(`${base}/download/ios/Simurgh-0.2.1.ipa`)).status, 200);
+  assert.equal((await fetch(`${base}/download/ios/..%2fdb.json`)).status, 404);
+  // a signed request with a name that is no .ipa: refused
+  assert.equal((await adminCall('POST', '/admin/ios-release', { json: { channel: CHANNEL, file: 'Simurgh-Setup.exe', version: '9.9.9', build: 99 } })).status, 400);
+  const st = await tool('status');
+  assert.match(st, /iPhone: 0\.3\.0 build 5/);
+  assert.match(st, /0\.2\.0 ios: \d/);
+});

@@ -65,6 +65,10 @@ try {
   const exe = crypto.randomBytes(1536 * 1024);
   await admin('PUT', '/admin/files/local-check-channel/Simurgh-Setup.exe', null, exe);
   await admin('POST', '/admin/release', { channel: 'local-check-channel', file: 'Simurgh-Setup.exe', version: '0.1.23' });
+  // and a stand-in iPhone app
+  const ipa = crypto.randomBytes(3 * 1048576);
+  await admin('PUT', '/admin/files/local-check-channel/Simurgh-0.2.0.ipa', null, ipa);
+  await admin('POST', '/admin/ios-release', { channel: 'local-check-channel', file: 'Simurgh-0.2.0.ipa', version: '0.2.0', build: 2, notes: 'First' });
 
   const profile = path.join(tmp, 'edge');
   const downloads = path.join(tmp, 'downloads');
@@ -121,19 +125,35 @@ try {
   check('the server counts the download (a number, nothing about who)', st.downloads?.['0.1.23'] === 1 && !JSON.stringify(st).match(/Edge|Windows 1/), JSON.stringify(st.downloads));
   await go(`${BASE}/`);
   await shot('2-en.png');
+  // the iPhone section: SideStore and AltStore get the source, the .ipa link the newest app, the version from the server
+  const source = encodeURIComponent(`${BASE}/ios/source.json`);
+  const iosLinks = await ev(`Object.fromEntries([...document.querySelectorAll('[data-ios]')].map((a) => [a.dataset.ios, a.getAttribute('href')]))`);
+  check('iPhone: Add to SideStore / AltStore and the .ipa', iosLinks?.sidestore === `sidestore://source?url=${source}` && iosLinks?.altstore === `altstore://source?url=${source}` && iosLinks?.ipa === `${BASE}/download/ios`, JSON.stringify(iosLinks));
+  check('iPhone: the version and size from the server', (await ev(`document.querySelector('[data-ios-version]').textContent`)) === 'Version 0.2.0 · 3 MB', await ev(`document.querySelector('[data-ios-version]').textContent`));
+  const src = await (await fetch(`${BASE}/ios/source.json`)).json();
+  const gotIpa = Buffer.from(await (await fetch(src.apps?.[0]?.versions?.[0]?.downloadURL)).arrayBuffer());
+  check("iPhone: the source's download is the app, its icon loads", gotIpa.equals(ipa) && (await fetch(src.apps[0].iconURL)).ok, src.apps?.[0]?.iconURL);
+  await ev(`document.getElementById('iphone').scrollIntoView()`);
+  await shot('2b-en-iphone.png', false);
   await go(`${BASE}/ps/`);
   check('the Pashto page, right to left', (await ev('document.documentElement.dir')) === 'rtl' && /سیمرغ ډاونلوډ کړئ/.test(await ev('document.body.innerText')));
   const ps = await button();
   check('Pashto: the Download button', ps?.text === 'د وینډوز لپاره ډاونلوډ' && ps.href === `${BASE}/download`, JSON.stringify(ps));
   await shot('3-ps.png');
+  check('Pashto: the iPhone section', /په ایفون کې/.test(await ev('document.body.innerText')) && (await ev(`document.querySelector('#iphone [data-ios-version]').textContent`)) === 'نسخه 0.2.0، 3 MB', await ev(`document.querySelector('#iphone [data-ios-version]').textContent`));
+  await ev(`document.getElementById('iphone').scrollIntoView()`);
+  await shot('3b-ps-iphone.png', false);
   await go(`${BASE}/fa/`);
   check('the Dari page', /دانلود سیمرغ/.test(await ev('document.body.innerText')));
   const fa = await button();
   check('Dari: the Download button', fa?.text === 'دانلود برای ویندوز' && fa.href === `${BASE}/download`, JSON.stringify(fa));
   await shot('4-fa.png');
+  check('Dari: the iPhone section (in English, like Linux)', (await ev(`getComputedStyle(document.getElementById('iphone')).direction`)) === 'ltr' && (await ev(`document.querySelectorAll('.get-grid > *').length`)) === 2, await ev(`document.querySelectorAll('.get-grid > *').length`));
   await go(`${BASE}/`, 390, 844, true);
   check('on a phone: no sideways scrolling', (await ev('document.documentElement.scrollWidth')) <= 390, await ev('document.documentElement.scrollWidth'));
   await shot('5-phone.png');
+  await ev(`document.getElementById('iphone').scrollIntoView()`);
+  await shot('6-phone-iphone.png', false);
   await b.send('Browser.close').catch(() => {});
   b.close();
 } catch (e) {

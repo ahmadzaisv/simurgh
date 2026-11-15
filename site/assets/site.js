@@ -7,7 +7,12 @@
   if (!API) return;
   for (const a of document.querySelectorAll('[data-download]')) a.href = `${API}/download`;
   for (const a of document.querySelectorAll('[data-linux]')) a.href = `${API}/download/linux/${a.dataset.linux}`;
+  // the iPhone app: SideStore and AltStore add the source by these links, the .ipa is for installing it by hand
+  const source = encodeURIComponent(`${API}/ios/source.json`);
+  const ios = { sidestore: `sidestore://source?url=${source}`, altstore: `altstore://source?url=${source}`, ipa: `${API}/download/ios` };
+  for (const a of document.querySelectorAll('[data-ios]')) a.href = ios[a.dataset.ios] || a.href;
   const word = { en: 'Version', ps: 'نسخه', fa: 'نسخه' }[lang] || 'Version';
+  const sizeOf = (bytes) => `${Math.max(1, Math.round(bytes / 1048576))} MB`;
 
   // the version and size next to the title (the version stays in Latin digits: ۰ looks like the dots between them)
   fetch(`${API}/api/latest`)
@@ -23,6 +28,19 @@
         size.textContent = `${mb} MB`;
         el.replaceChildren(`${word} `, v, lang === 'en' ? ' · ' : '، ', size);
       }
+    })
+    .catch(() => {});
+
+  // the iPhone app's newest version (in English on the Dari page, like its iPhone section)
+  fetch(`${API}/api/ios/latest`)
+    .then((r) => (r.ok ? r.json() : null))
+    .then((r) => {
+      if (!r?.version) return;
+      const v = document.createElement('bdi');
+      v.textContent = r.version;
+      const size = document.createElement('bdi');
+      size.textContent = sizeOf(r.size);
+      for (const el of document.querySelectorAll('[data-ios-version]')) el.replaceChildren(`${lang === 'ps' ? word : 'Version'} `, v, lang === 'ps' ? '، ' : ' · ', size);
     })
     .catch(() => {});
 })();
