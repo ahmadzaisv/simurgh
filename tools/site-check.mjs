@@ -132,6 +132,7 @@ try {
   check('iPhone: the version and size from the server', (await ev(`document.querySelector('[data-ios-version]').textContent`)) === 'Version 0.2.0 · 3 MB', await ev(`document.querySelector('[data-ios-version]').textContent`));
   const src = await (await fetch(`${BASE}/ios/source.json`)).json();
   const gotIpa = Buffer.from(await (await fetch(src.apps?.[0]?.versions?.[0]?.downloadURL)).arrayBuffer());
+  check('iPhone: the no-computer command, copied with one tap', (await ev(`document.querySelector('#iphone [data-copy]').dataset.copy`)) === 'curl -fsSL https://simurgh-download.onrender.com/ios/setup.sh | bash');
   check("iPhone: the source's download is the app, its icon loads", gotIpa.equals(ipa) && (await fetch(src.apps[0].iconURL)).ok, src.apps?.[0]?.iconURL);
   await ev(`document.getElementById('iphone').scrollIntoView()`);
   await shot('2b-en-iphone.png', false);

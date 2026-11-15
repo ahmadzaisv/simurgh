@@ -66,18 +66,20 @@
           </div>
           <div class="linux" id="iphone">
             <h2><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M8 1.5h8A2.5 2.5 0 0 1 18.5 4v16a2.5 2.5 0 0 1-2.5 2.5H8A2.5 2.5 0 0 1 5.5 20V4A2.5 2.5 0 0 1 8 1.5zM7.5 5v14h9V5zm3 15.2h3v1h-3z"/></svg><span>په ایفون کې</span></h2>
-            <p class="fine">د ایفون سیمرغ وړیا دی. په <b dir="ltr">SideStore</b> (یا AltStore) نصبېږي. SideStore یې ستاسو په خپل وړیا Apple ID لاسلیکوي، نو App Store ته اړتیا نشته. <span data-ios-version></span></p>
+            <p class="fine">د ایفون سیمرغ وړیا دی او <b>کمپیوټر ته اړتیا نه لري</b>: ستاسو خپل وړیا سرور په Google Cloud کې سیمرغ ستاسو په Apple ID لاسلیکوي، او Safari یې نصبوي. <span data-ios-version></span></p>
             <ol class="steps fine">
-              <li>SideStore یو ځل له <a href="https://sidestore.io" rel="noopener" dir="ltr">sidestore.io</a> څخه نصب کړئ (همدا یو ځل کمپیوټر ته اړتیا لري).</li>
-              <li>په ایفون کې لاندې پر <b dir="ltr">Add to SideStore</b> ټک وکړئ، بیا سیمرغ له هغه ځایه نصب کړئ.</li>
-              <li>سیمرغ پرانیزئ. په Settings کې <b>له دې ایفون څخه نوی سرور</b> ستاسو خپل وړیا سرور په Google Cloud کې جوړوي، بې له کمپیوټره. بیا <b>Claude ته ننوتل</b> ووهئ او خپل Claude پلان وکاروئ.</li>
+              <li>په ایفون کې <a href="https://console.cloud.google.com" rel="noopener" dir="ltr">Google Cloud</a> پرانیزئ او په Google حساب ننوځئ (لومړی ځل Google د بانک کارت غواړي؛ e2-micro سرور وړیا دی).</li>
+              <li>دا امر کاپي کړئ، <a href="https://shell.cloud.google.com/?show=terminal" rel="noopener" dir="ltr">Cloud Shell</a> پرانیزئ، امر پکې پېسټ کړئ او Enter ووهئ:
+                <span class="cmd"><code dir="ltr">curl -fsSL https://simurgh-download.onrender.com/ios/setup.sh | bash</code><button class="dlalt" type="button" data-copy="curl -fsSL https://simurgh-download.onrender.com/ios/setup.sh | bash" data-done="کاپي شو">کاپي</button></span></li>
+              <li>څو دقیقې وروسته Cloud Shell یو لینک ښيي: هغه پرانیزئ. ستاسو سرور بشپړوي، بیا سیمرغ ګام په ګام نصبوي.</li>
             </ol>
+            <p class="fine"><b>که SideStore یا AltStore لرئ،</b> د سیمرغ سرچینه هلته ورزیاته کړئ:</p>
             <p class="linux-links">
               <a class="dlalt" data-ios="sidestore" href="sidestore://source?url=https%3A%2F%2Fsimurgh-download.onrender.com%2Fios%2Fsource.json">Add to SideStore</a>
               <a class="dlalt" data-ios="altstore" href="altstore://source?url=https%3A%2F%2Fsimurgh-download.onrender.com%2Fios%2Fsource.json">Add to AltStore</a>
               <a class="dlalt" data-ios="ipa" dir="ltr" href="https://simurgh-download.onrender.com/download/ios">.ipa</a>
             </p>
-            <p class="fine"><b>نوې نسخې:</b> SideStore هره نوې نسخه په <b dir="ltr">Updates</b> کې ښيي، او سیمرغ یې هم درته وايي. هغه اپ چې په وړیا Apple ID لاسلیک شوی وي، اوه ورځې چلېږي: تر هغه مخکې SideStore پرانیزئ او پر <b dir="ltr">Refresh</b> ټک وکړئ. د سرچینې پته: <code dir="ltr">https://simurgh-download.onrender.com/ios/source.json</code></p>
+            <p class="fine"><b>نوې نسخې:</b> سیمرغ هره نوې نسخه درته وايي او په یوه ټک یې ستاسو له سرور څخه نصبوي (SideStore یې په Updates کې ښيي). د وړیا Apple ID لاسلیک اوه ورځې دوام کوي؛ سیمرغ یې هم په یوه ټک نوی کوي.</p>
           </div>
         </div>
         <figure>

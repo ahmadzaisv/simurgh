@@ -63,6 +63,9 @@ header.top .wrap { display: flex; align-items: center; gap: 24px; min-height: 62
 .linux-links .fine { margin: 0; }
 .steps { margin: 0 0 12px; padding-inline-start: 22px; }
 .steps li { margin: 4px 0; }
+.cmd { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0 4px; }
+.cmd code { flex: 1 1 260px; padding: 8px 10px; border-radius: 10px; background: rgba(127, 127, 127, 0.12); font-size: 13px; word-break: break-all; text-align: left; }
+.cmd button { cursor: pointer; font: inherit; }
 .dlalt { display: inline-block; padding: 7px 12px; border: 1px solid rgba(127, 127, 127, 0.4); border-radius: 8px; font-size: 14px; text-decoration: none; color: inherit; }
 .dlalt:hover { border-color: var(--gold); }
 .dlalt:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }

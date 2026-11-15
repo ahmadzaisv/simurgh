@@ -11,6 +11,16 @@
   const source = encodeURIComponent(`${API}/ios/source.json`);
   const ios = { sidestore: `sidestore://source?url=${source}`, altstore: `altstore://source?url=${source}`, ipa: `${API}/download/ios` };
   for (const a of document.querySelectorAll('[data-ios]')) a.href = ios[a.dataset.ios] || a.href;
+  // the Cloud Shell command: copied with one tap
+  for (const b of document.querySelectorAll('[data-copy]')) {
+    const was = b.textContent;
+    b.addEventListener('click', () => {
+      navigator.clipboard?.writeText(b.dataset.copy).then(() => {
+        b.textContent = b.dataset.done || was;
+        setTimeout(() => (b.textContent = was), 2000);
+      }, () => {});
+    });
+  }
   const word = { en: 'Version', ps: 'نسخه', fa: 'نسخه' }[lang] || 'Version';
   const sizeOf = (bytes) => `${Math.max(1, Math.round(bytes / 1048576))} MB`;
 

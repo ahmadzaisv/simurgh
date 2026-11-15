@@ -67,18 +67,20 @@
 </div>
 <div dir="ltr">          <div class="linux" id="iphone">
             <h2><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M8 1.5h8A2.5 2.5 0 0 1 18.5 4v16a2.5 2.5 0 0 1-2.5 2.5H8A2.5 2.5 0 0 1 5.5 20V4A2.5 2.5 0 0 1 8 1.5zM7.5 5v14h9V5zm3 15.2h3v1h-3z"/></svg><span>On an iPhone</span></h2>
-            <p class="fine">Simurgh for iPhone is free. It installs with <b>SideStore</b> (or AltStore), which signs it with your own free Apple ID, so it needs no App Store. <span data-ios-version></span></p>
+            <p class="fine">Simurgh for iPhone is free and needs <b>no computer</b>: your own free server on Google Cloud signs it with your Apple ID, and Safari installs it. <span data-ios-version></span></p>
             <ol class="steps fine">
-              <li>Install SideStore once, from <a href="https://sidestore.io" rel="noopener">sidestore.io</a> (it needs a computer that one time).</li>
-              <li>On the iPhone, tap <b>Add to SideStore</b> below, then install Simurgh from it.</li>
-              <li>Open Simurgh. In Settings, <b>A new server from this iPhone</b> makes your own free server on Google Cloud, with no computer. Then <b>Sign in to Claude</b> with your Claude plan.</li>
+              <li>On the iPhone, open <a href="https://console.cloud.google.com" rel="noopener">Google Cloud</a> and sign in with Google (the first time, Google asks for a card; the e2-micro server is free).</li>
+              <li>Copy this command, open <a href="https://shell.cloud.google.com/?show=terminal" rel="noopener">Cloud Shell</a>, paste it and press Enter:
+                <span class="cmd"><code dir="ltr">curl -fsSL https://simurgh-download.onrender.com/ios/setup.sh | bash</code><button class="dlalt" type="button" data-copy="curl -fsSL https://simurgh-download.onrender.com/ios/setup.sh | bash" data-done="Copied">Copy</button></span></li>
+              <li>A few minutes later Cloud Shell shows a link: open it. It finishes your server, then installs Simurgh step by step.</li>
             </ol>
+            <p class="fine"><b>Already have SideStore or AltStore?</b> Add Simurgh’s source there instead:</p>
             <p class="linux-links">
               <a class="dlalt" data-ios="sidestore" href="sidestore://source?url=https%3A%2F%2Fsimurgh-download.onrender.com%2Fios%2Fsource.json">Add to SideStore</a>
               <a class="dlalt" data-ios="altstore" href="altstore://source?url=https%3A%2F%2Fsimurgh-download.onrender.com%2Fios%2Fsource.json">Add to AltStore</a>
               <a class="dlalt" data-ios="ipa" dir="ltr" href="https://simurgh-download.onrender.com/download/ios">.ipa</a>
             </p>
-            <p class="fine"><b>Updates:</b> SideStore shows each new version under <b>Updates</b>, and Simurgh tells you too. An app signed with a free Apple ID runs for 7 days: open SideStore and tap <b>Refresh</b> before then. The source’s address: <code dir="ltr">https://simurgh-download.onrender.com/ios/source.json</code></p>
+            <p class="fine"><b>Updates:</b> Simurgh tells you about each new version and installs it from your server with one tap (SideStore shows it under Updates). A free Apple ID’s signing lasts 7 days; Simurgh renews it with one tap too.</p>
           </div></div>
         </div>
         <figure>
