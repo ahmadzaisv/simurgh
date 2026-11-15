@@ -6,6 +6,10 @@
 //                                    the user's own free Apple ID, and show each new version as an update)
 //   GET  /download/ios[/<file>]      the iPhone app itself (.ipa): the newest, or one of the last few by name
 //   GET  /api/ios/latest             the iPhone app's newest version (the website and the app's own update notice)
+//   GET  /ios/setup.sh               the Cloud Shell script that makes a person's own Simurgh server from the website
+//                                    (no app, no computer): curl -fsSL .../ios/setup.sh | bash
+//   GET  /ios/files/<name>           what that server fetches: Simurgh's server (server.tar.gz) and the signing tool
+//                                    (xtool with Simurgh's sign command) that installs Simurgh on the iPhone over the air
 //   GET  /u/<channel>/<file>         the installed app's updates (latest.yml + installer), and trusted-devices.json - the
 //                                    owner's own computers, each signed with his key (Simurgh's owner device lock)
 //   POST /api/device                 a computer where the owner's own Claude account is locked tells its device id
@@ -34,6 +38,7 @@ const CLIP_DAY = 24 * 3600 * 1000;
 const SEEN_DAYS = 30; // a locked computer's device id is kept this long for the owner's tool
 const SEEN_MAX = 200;
 const IPA_NAME = /^Simurgh-\d+\.\d+\.\d+(-[0-9A-Za-z.]+)?\.ipa$/;
+const IOS_FILES = new Set(['server.tar.gz', 'xtool-x86_64.AppImage', 'cloud-setup.sh']);
 const IOS_KEEP = 3; // the iPhone versions kept on the disk and listed in the source (older .ipa files are deleted)
 
 const TYPES = { '.ipa': 'application/octet-stream', '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.yml': 'text/yaml; charset=utf-8', '.json': 'application/json', '.mp4': 'video/mp4' };
@@ -379,6 +384,14 @@ export function createServer({ dataDir, publicKeyPem, origins = [], siteDir = nu
         const r = ios();
         const body = r ? { version: r.version, build: r.build, size: r.size, minOS: r.minOS, notes: r.notes, notesPs: r.notesPs, at: r.at, ipa: ipaUrl(req, r.file), source: `${selfBase(req)}/ios/source.json`, page: `${siteBase(req)}/#iphone` } : { version: null };
         return send(res, 200, body, { ...cors, 'cache-control': 'public, max-age=300' });
+      }
+      const iosFile = url.pathname === '/ios/setup.sh' ? 'cloud-setup.sh' : /^\/ios\/files\/([^/]+)$/.exec(url.pathname)?.[1];
+      if (iosFile && (req.method === 'GET' || req.method === 'HEAD')) {
+        const ch = ios()?.channel || db().release?.channel;
+        const file = IOS_FILES.has(iosFile) && ch && store.filePath(ch, iosFile);
+        if (!file || !fs.existsSync(file)) return send(res, 404, 'Not there yet.\n');
+        if (iosFile === 'cloud-setup.sh') return sendFile(req, res, file, { type: 'text/plain; charset=utf-8', extra: { 'cache-control': 'no-cache' } });
+        return sendFile(req, res, file, { type: 'application/octet-stream', extra: { 'cache-control': 'public, max-age=300' } });
       }
       const ipa = /^\/download\/ios(?:\/([^/]+))?$/.exec(url.pathname);
       if (ipa && (req.method === 'GET' || req.method === 'HEAD')) return downloadIos(req, res, ipa[1] ? decodeURIComponent(ipa[1]) : null);

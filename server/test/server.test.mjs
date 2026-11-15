@@ -316,3 +316,33 @@ test('Simurgh for iPhone: the tool releases an .ipa; the SideStore/AltStore sour
   assert.match(st, /iPhone: 0\.3\.0 build 5/);
   assert.match(st, /0\.2\.0 ios: \d/);
 });
+
+test("the website's no-computer iPhone install: the setup script and its files, by name only; release-ios sends them", async () => {
+  const home = path.join(tmp, 'owner-ios');
+  const tool = (...a) => new Promise((resolve, reject) => execFile(process.execPath, [TOOL, ...a], { env: { ...process.env, SIMURGH_RELEASE_HOME: home } }, (e, o, err) => (e ? reject(new Error(err || o)) : resolve(o))));
+  const dir = path.join(tmp, 'ios-files');
+  fs.mkdirSync(dir, { recursive: true });
+  const script = '#!/usr/bin/env bash\necho simurgh\n';
+  fs.writeFileSync(path.join(dir, 'cloud-setup.sh'), script);
+  const xt = crypto.randomBytes(100 * 1024);
+  fs.writeFileSync(path.join(dir, 'xtool-x86_64.AppImage'), xt);
+  await tool('ios-file', path.join(dir, 'cloud-setup.sh'));
+  await tool('ios-file', path.join(dir, 'xtool-x86_64.AppImage'));
+  await assert.rejects(tool('ios-file', path.join(dir, 'other.bin')), /ios-file/);
+  const s = await fetch(`${base}/ios/setup.sh`);
+  assert.equal(s.status, 200);
+  assert.match(s.headers.get('content-type'), /text\/plain/);
+  assert.equal(await s.text(), script);
+  assert.ok(Buffer.from(await (await fetch(`${base}/ios/files/xtool-x86_64.AppImage`)).arrayBuffer()).equals(xt));
+  assert.equal((await fetch(`${base}/ios/files/server.tar.gz`)).status, 404, 'not uploaded yet');
+  assert.equal((await fetch(`${base}/ios/files/Simurgh-Setup.exe`)).status, 404, 'only these names');
+  // release-ios sends server.tar.gz and cloud-setup.sh when they are beside the .ipa
+  const ipa = crypto.randomBytes(1000);
+  const f = path.join(dir, 'Simurgh-0.4.0.ipa');
+  fs.writeFileSync(f, ipa);
+  const tgz = crypto.randomBytes(2000);
+  fs.writeFileSync(path.join(dir, 'server.tar.gz'), tgz);
+  fs.writeFileSync(f.replace(/\.ipa$/, '.json'), JSON.stringify({ version: '0.4.0', build: 6, bundleID: 'com.bilal.Simurgh', minOS: '18.0', size: ipa.length, sha256: crypto.createHash('sha256').update(ipa).digest('hex'), notes: 'Files too', privacy: {}, entitlements: [] }));
+  assert.match(await tool('release-ios', f), /uploaded server\.tar\.gz/);
+  assert.ok(Buffer.from(await (await fetch(`${base}/ios/files/server.tar.gz`)).arrayBuffer()).equals(tgz));
+});

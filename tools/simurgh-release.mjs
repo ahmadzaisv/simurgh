@@ -16,6 +16,10 @@
 //                                                      website, the SideStore/AltStore source and the app's own update
 //                                                      notice offer. It stops when What's new is still the last
 //                                                      version's (--same-notes lets it).
+//   node simurgh-release.mjs ios-file <file>             one of the files the website's no-computer iPhone install
+//                                                      uses: server.tar.gz, cloud-setup.sh (release-ios sends
+//                                                      these two by itself when they are beside the .ipa) or
+//                                                      xtool-x86_64.AppImage (simurgh-ios' tools/xtool-sign)
 //   node simurgh-release.mjs aliases <dir>             only that: <dir>'s latest.yml as pro.yml on the update channel
 //   node simurgh-release.mjs status                    the release on the server and how often each version was downloaded
 //   node simurgh-release.mjs setup [<repo>]            makes the owner's signing key (once) and writes its public half
@@ -193,11 +197,24 @@ async function releaseIos(ipa, sameNotes = false) {
   if (!String(meta.notes || '').trim()) throw new Error(`no What's new in ${path.basename(metaFile)} (simurgh-ios: release-notes.md)`);
   const live = await fetch(new URL('/api/ios/latest', c.server), { cache: 'no-store', signal: AbortSignal.timeout(60000) }).then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
   if (live.version && live.version !== meta.version && !sameNotes && String(live.notes || '').trim() === String(meta.notes).trim()) throw new Error(`What's new is still ${live.version}'s - write simurgh-ios' release-notes.md for ${meta.version} and run tools/ipa.sh again (or add --same-notes)`);
+  // the no-computer install's files (tools/ipa.sh puts them beside the .ipa): first, so a new server never gets an
+  // older server than the app it signs
+  for (const f of ['server.tar.gz', 'cloud-setup.sh']) if (fs.existsSync(path.join(path.dirname(ipa), f))) await iosFile(path.join(path.dirname(ipa), f));
   const t0 = Date.now();
   await call('PUT', `/admin/files/${c.channel}/${file}`, { file: ipa, timeoutMs: 30 * 60 * 1000 });
   log(`uploaded ${file} in ${Math.round((Date.now() - t0) / 1000)} s`);
   const r = await call('POST', '/admin/ios-release', { json: { channel: c.channel, file, version: meta.version, build: meta.build, bundleID: meta.bundleID, minOS: meta.minOS, sha256: sha, notes: meta.notes, notesPs: meta.notesPs || '', privacy: meta.privacy || {}, entitlements: meta.entitlements || [] } });
   log(`iPhone ${r.ios.version} (build ${r.ios.build}) is the download now (${Math.round(r.ios.size / 1048576)} MB) - in the source: ${new URL('/ios/source.json', c.server)}`);
+}
+
+async function iosFile(f) {
+  const name = path.basename(f || '');
+  if (!['server.tar.gz', 'cloud-setup.sh', 'xtool-x86_64.AppImage'].includes(name) || !fs.existsSync(f)) throw new Error('ios-file <server.tar.gz | cloud-setup.sh | xtool-x86_64.AppImage>');
+  const c = config();
+  if (!c.channel) throw new Error(`no update channel in ${CONFIG}`);
+  const t0 = Date.now();
+  await call('PUT', `/admin/files/${c.channel}/${name}`, { file: f, timeoutMs: 40 * 60 * 1000 });
+  log(`uploaded ${name} (${Math.round(fs.statSync(f).size / 1024)} KB) in ${Math.round((Date.now() - t0) / 1000)} s`);
 }
 
 // The owner's own-PC builds (0.1.46-pro.3, 0.1.47-pro.1…) carry "pro" in their version, and electron-updater then reads
@@ -321,6 +338,7 @@ try {
   if (cmd === 'release') await release(args[0], args[1], args.includes('--same-notes'));
   else if (cmd === 'release-linux') await releaseLinux(args[0], args[1]);
   else if (cmd === 'release-ios') await releaseIos(args[0], args.includes('--same-notes'));
+  else if (cmd === 'ios-file') await iosFile(args[0]);
   else if (cmd === 'aliases') await feedAliases(args[0]);
   else if (cmd === 'status') await status();
   else if (cmd === 'setup') setup(args[0]);
